@@ -1,0 +1,16 @@
+@echo off
+REM SD:SourceDirectory
+set SD=V:\code\
+REM BD: BuildDirectory
+set BD="V:\build\\"
+set DisabledWarnings= -wd4100 -wd4189 -wd4706
+set CompilerParams= -nologo -Od -FC -MT -W4 -WX -Zi %DisabledWarnings%
+set Libraries=User32.lib D3D11.lib D3DCompiler.lib
+set LinkParams=%Libraries%
+pushd V:\
+if not exist build mkdir build
+pushd %BD%
+cd
+cl %CompilerParams% %SD%Win32Platform.cpp %LinkParams% /Fe"Direct3D.exe"
+popd
+popd
