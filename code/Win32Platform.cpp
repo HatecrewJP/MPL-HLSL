@@ -156,9 +156,9 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 							
 							//Vertex Buffer Creation
 							UINT VertexBufferSize = VertexCount*VertexSize;
-							float oVertexBufferData[] = {
-								0.0f,0.5f,0.0f,
-								-0.5f,0.5f,0.0f,
+							float oVertexBufferData[] {
+								0.95f,0.99f,0.0f,
+								0.0f,0.9f,0.0f,
 								0.0f,0.0f,0.0f
 							};
 						
@@ -188,7 +188,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 								DeviceContext->IASetVertexBuffers(0,1,&VertexBuffer,Strides,Offsets);
 								OutputDebugStringA("VertexBuffer created and set\n");
 								DeviceContext->VSSetShader(VertexShader,NULL,0);
-								DeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+								DeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
 								OutputDebugStringA("VS Initialized");
 								
 								//Pixel Shader
@@ -230,15 +230,9 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 												DeviceContext->RSSetViewports(1,&ViewPort);
 
 
-
-												float BackgroundColor[4] = {1,1,1,1};
-												DeviceContext->ClearRenderTargetView(RenderTargetView,BackgroundColor);
 												DeviceContext->Draw(VertexCount, 0);
-												SwapChain->Present(0,0);
-												DeviceContext->ClearRenderTargetView(RenderTargetView, BackgroundColor);
-												SwapChain->Present(1, 0);
-												DeviceContext->ClearRenderTargetView(RenderTargetView, BackgroundColor);
-												SwapChain->Present(2,0);
+												SwapChain->Present(0, 0); 
+												
 											
 												
 											}
@@ -317,14 +311,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 		
 		
 		
-		for(;;){
-			MSG Message;
-			PeekMessageA(&Message, 0, 0, 0, PM_REMOVE);
-			if(Message.message == WM_QUIT){
-				exit(0);
-			}
-			
-		}
+	
 		
 		
 		
@@ -334,7 +321,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 		ProcessError(GetLastError());
 	}
 	
-	
-	
+	for(;;)
+	{ }
 	
 }
