@@ -1,17 +1,22 @@
-#define internal static
+
 #define ASSERT(x) if(!(x)) *(char*)0=0;
-#define bool32 int
+
+
 
 #include <d3d11.h>
 #include <dxgi1_2.h>
 #include <d3dcompiler.h>
 #include <windows.h>
 
+
+
+typedef int bool32;
+
 LRESULT Wndproc(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam){
 	return DefWindowProcA(WindowHandle,Message,WParam,LParam);
 }
 
-internal void ProcessError(DWORD Error){
+static void ProcessError(DWORD Error){
 	LPVOID lpMsgBuf = 0;
 	FormatMessage(
 		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -24,7 +29,7 @@ internal void ProcessError(DWORD Error){
 	exit(-1);
 }
 
-internal int GetIDXGIInterfacesFromD3DDevice(ID3D11Device *Device, IDXGIDevice1 **IdxgiDevice,IDXGIAdapter **IdxgiAdapter,IDXGIFactory2 **IdxgiFactory ){
+static int GetIDXGIInterfacesFromD3DDevice(ID3D11Device *Device, IDXGIDevice1 **IdxgiDevice,IDXGIAdapter **IdxgiAdapter,IDXGIFactory2 **IdxgiFactory ){
 	*IdxgiDevice = NULL;
 	*IdxgiAdapter = NULL;
 	*IdxgiFactory = NULL;
@@ -65,7 +70,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 	int Width = 1920;
 	int Height = 1080;
 	
-	const UINT VertexCount = 1024;
+	const UINT VertexCount = 3;
 	const UINT VertexSize = 3*sizeof(UINT);
 	
 	HWND Window = CreateWindowExA(NULL,WindowClass.lpszClassName,"Direct3D_",WS_OVERLAPPEDWINDOW|WS_VISIBLE, 0, 0, Width, Height,NULL,NULL,hInst,NULL);
@@ -99,9 +104,6 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			ASSERT(IdxgiAdapter);
 			ASSERT(IdxgiFactory);
 			
-			
-			
-			
 			DXGI_SAMPLE_DESC SampleDesc = {1,0};
 			
 			DXGI_SWAP_CHAIN_DESC1 SwapChainDesc1;
@@ -113,10 +115,11 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			SwapChainDesc1.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 			SwapChainDesc1.BufferCount = 2;
 			SwapChainDesc1.Scaling = DXGI_SCALING_STRETCH;
-			SwapChainDesc1.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+			SwapChainDesc1.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 			SwapChainDesc1.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 			SwapChainDesc1.Flags = 0;
 			HRESULT res;
+			
 			IDXGISwapChain1 *SwapChain;
 			if((res=IdxgiFactory->CreateSwapChainForHwnd(Device,Window,&SwapChainDesc1,NULL,NULL,&SwapChain))==S_OK){
 				//Vertex Shader Compilation
@@ -138,7 +141,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 						D3D11_INPUT_ELEMENT_DESC VSInputElementDesc;
 						VSInputElementDesc.SemanticName = "POSITION";
 						VSInputElementDesc.SemanticIndex = 0;
-						VSInputElementDesc.Format = DXGI_FORMAT_R32G32B32_UINT;
+						VSInputElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
 						VSInputElementDesc.InputSlot = 0;
 						VSInputElementDesc.AlignedByteOffset = 0;
 						VSInputElementDesc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
@@ -153,8 +156,15 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 							
 							//Vertex Buffer Creation
 							UINT VertexBufferSize = VertexCount*VertexSize;
-							UINT *VertexBufferData =(UINT*) VirtualAlloc(0,VertexBufferSize,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE);
-							memset(VertexBufferData,1,VertexBufferSize);
+							float oVertexBufferData[] = {
+								0.0f,0.5f,0.0f,
+								-0.5f,0.5f,0.0f,
+								0.0f,0.0f,0.0f
+							};
+						
+							
+							
+							
 							
 							D3D11_BUFFER_DESC VertexBufferDesc;
 							VertexBufferDesc.ByteWidth = VertexBufferSize;
@@ -165,7 +175,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 							VertexBufferDesc.StructureByteStride = VertexSize;
 							
 							D3D11_SUBRESOURCE_DATA SubresourceData;
-							SubresourceData.pSysMem = VertexBufferData;
+							SubresourceData.pSysMem = oVertexBufferData;
 							SubresourceData.SysMemPitch = 0;
 							SubresourceData.SysMemSlicePitch = 0;
 							
@@ -178,7 +188,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 								DeviceContext->IASetVertexBuffers(0,1,&VertexBuffer,Strides,Offsets);
 								OutputDebugStringA("VertexBuffer created and set\n");
 								DeviceContext->VSSetShader(VertexShader,NULL,0);
-								DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+								DeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 								OutputDebugStringA("VS Initialized");
 								
 								//Pixel Shader
@@ -198,7 +208,50 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 										DeviceContext->PSSetShader(PixelShader,NULL,0);
 										OutputDebugStringA("PixelShader creation successful");
 										
-										//TODO: RenderTargetView
+										//Resource
+										ID3D11Resource *RenderTargetResource = NULL;
+										if((res=SwapChain->GetBuffer(0,__uuidof(ID3D11Resource),(void**)&RenderTargetResource))==S_OK){
+											ASSERT(RenderTargetResource);
+											//RenderTargetView
+											ID3D11RenderTargetView *RenderTargetView = NULL;
+											
+											if((res=Device->CreateRenderTargetView(RenderTargetResource,NULL,&RenderTargetView))==S_OK){
+												ASSERT(RenderTargetView);
+												DeviceContext->OMSetRenderTargets(1,&RenderTargetView,NULL);
+												OutputDebugStringA("RenderTargetView created");
+												//ViewPort
+												D3D11_VIEWPORT ViewPort;
+												ViewPort.TopLeftX = 0.0f;
+												ViewPort.TopLeftY = 0.0f;
+												ViewPort.Width = (float)Width;
+												ViewPort.Height = (float)Height;
+												ViewPort.MinDepth = 0.0f;
+												ViewPort.MaxDepth = 1.0f;
+												DeviceContext->RSSetViewports(1,&ViewPort);
+
+
+
+												float BackgroundColor[4] = {1,1,1,1};
+												DeviceContext->ClearRenderTargetView(RenderTargetView,BackgroundColor);
+												DeviceContext->Draw(VertexCount, 0);
+												SwapChain->Present(0,0);
+												DeviceContext->ClearRenderTargetView(RenderTargetView, BackgroundColor);
+												SwapChain->Present(1, 0);
+												DeviceContext->ClearRenderTargetView(RenderTargetView, BackgroundColor);
+												SwapChain->Present(2,0);
+											
+												
+											}
+											else if(res==S_FALSE){
+												OutputDebugStringA("RenderTargetView args correct");
+											}
+											else{
+												OutputDebugStringA("RenderTargetView failed");
+											}
+										}
+										
+										
+										
 										
 										
 										
@@ -229,7 +282,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 								exit(-1);
 							}
 							
-							
+							VirtualFree(oVertexBufferData,0,MEM_RELEASE);
 							
 						}
 						else if(res == S_FALSE){
@@ -263,17 +316,23 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 		
 		
 		
-		while(1){
+		
+		for(;;){
+			MSG Message;
+			PeekMessageA(&Message, 0, 0, 0, PM_REMOVE);
+			if(Message.message == WM_QUIT){
+				exit(0);
+			}
 			
-			DeviceContext->Draw(VertexCount, 0);
 		}
+		
+		
+		
 
 	}
 	else{
 		ProcessError(GetLastError());
 	}
-	
-	
 	
 	
 	
