@@ -1,6 +1,7 @@
 
 #define ASSERT(x) if(!(x)) *(char*)0=0;
 
+#define TRIANGLE 0
 
 
 #include <d3d11.h>
@@ -70,8 +71,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 	int Width = 1920;
 	int Height = 1080;
 	
-	const UINT VertexCount = 3;
-	const UINT VertexSize = 3*sizeof(UINT);
+	UINT VertexCount = 0;
+	const UINT VertexSize = 3*sizeof(float);
 	
 	HWND Window = CreateWindowExA(NULL,WindowClass.lpszClassName,"Direct3D_",WS_OVERLAPPEDWINDOW|WS_VISIBLE, 0, 0, Width, Height,NULL,NULL,hInst,NULL);
 	if(Window){
@@ -155,12 +156,15 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 							OutputDebugStringA("VS Input Layout created and set");
 							
 							//Vertex Buffer Creation
-							UINT VertexBufferSize = VertexCount*VertexSize;
+							
 							float oVertexBufferData[] {
-								0.95f,0.99f,0.0f,
-								0.0f,0.9f,0.0f,
-								0.0f,0.0f,0.0f
+								0.25f,0.25,0.0f,
+								0.0f,0.25f,0.0f,
+								0.0f,0.0f,0.0f,
+								0.25f,0.25,0.0f
 							};
+							VertexCount = sizeof(oVertexBufferData) / sizeof(oVertexBufferData[0]) / 3;
+							UINT VertexBufferSize = VertexCount * VertexSize;
 						
 							
 							
@@ -188,7 +192,12 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 								DeviceContext->IASetVertexBuffers(0,1,&VertexBuffer,Strides,Offsets);
 								OutputDebugStringA("VertexBuffer created and set\n");
 								DeviceContext->VSSetShader(VertexShader,NULL,0);
-								DeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
+#if TRIANGLE
+								DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+#else
+								DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
+								
+#endif
 								OutputDebugStringA("VS Initialized");
 								
 								//Pixel Shader
