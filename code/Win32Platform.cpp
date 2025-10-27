@@ -1,7 +1,7 @@
 
 #define ASSERT(x) if(!(x)) *(char*)0=0;
 
-#define TRIANGLE 0
+#define TRIANGLE 1
 #define MAX_PIXEL_SHADER_COUNT 32
 
 
@@ -92,7 +92,13 @@ static ID3DBlob *Win32CompileShaderFromFile(LPCWSTR Filename, LPCSTR Entrypoint,
 	ID3DBlob *BlobCode;
 	ID3DBlob *BlobError;
 	
-	if(!D3DCompileFromFile(Filename,NULL,NULL,Entrypoint,Target,D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY,0,&BlobCode,&BlobError)==S_OK) return NULL;
+	if(!(D3DCompileFromFile(Filename, NULL, NULL, Entrypoint, Target, D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY, 0, &BlobCode, &BlobError) == S_OK)){
+		if(BlobError){
+			LPCSTR Buffer = (LPCSTR)BlobError->GetBufferPointer();
+			OutputDebugStringA(Buffer);
+		}
+		return NULL;
+	}
 	
 	ASSERT(BlobCode);
 	return BlobCode;
@@ -161,7 +167,6 @@ static int Win32AddPixelShaderToArray(ID3D11PixelShader** PixelShaderArray, ID3D
 	return -1;
 	
 }
-
 
 
 int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow){
@@ -233,7 +238,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			//Vertex Shader Compilation
 			ID3DBlob *BlobVSCode = Win32CompileShaderFromFile(L"VertexShader.hlsl","VSEntry","vs_5_0");
-			
+			ASSERT(BlobVSCode);
 			void *CompiledVSShaderCode = BlobVSCode->GetBufferPointer();
 			size_t VSShaderSize = BlobVSCode->GetBufferSize();
 			ASSERT(CompiledVSShaderCode);
@@ -247,20 +252,18 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				DeviceContext->IASetInputLayout(VSInputLayout);
 				
 				float oVertexBufferData[] {
-					0.25f,0.25,0.0f,
-					0.0f,0.25f,0.0f,
-					0.0f,0.0f,0.0f,
-					0.25f,0.25,0.0f
+					0.0f,0.5f,0.0f,
+					0.25f,0.0f,0.0f,
+					-0.25f,0.0f,0.0f
 				};
 				VertexCount = sizeof(oVertexBufferData) / sizeof(oVertexBufferData[0]) / 3;
 				UINT VertexBufferSize = VertexCount * VertexSize;
 				VertexBuffer = Win32CreateVertexBuffer(Device, oVertexBufferData, VertexBufferSize, VertexSize);
-				
-				
-				
-				
+
 				Win32AddPixelShaderToArray(PixelShaderArray,Win32CreatePixelShader(Device,L"PixelShaderWhite.hlsl","PSEntry","ps_5_0"));
 				Win32AddPixelShaderToArray(PixelShaderArray,Win32CreatePixelShader(Device,L"PixelShaderRed.hlsl","PSEntry","ps_5_0"));
+				Win32AddPixelShaderToArray(PixelShaderArray,Win32CreatePixelShader(Device,L"PixelShaderGreen.hlsl","PSEntry","ps_5_0"));
+				Win32AddPixelShaderToArray(PixelShaderArray,Win32CreatePixelShader(Device,L"PixelShaderBlue.hlsl","PSEntry","ps_5_0"));
 				
 					//Resource
 					ID3D11Resource *RenderTargetResource = NULL;
@@ -282,10 +285,6 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					else{
 						OutputDebugStringA("RenderTargetResource failed");
 					}
-					
-				
-				
-			
 		}
 		else{
 			
@@ -314,7 +313,18 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 						else if(VKCode == '2'){
 							if(PixelShaderInArrayCount >= 2 ) ActivePixelShader = PixelShaderArray[1];
 						}
-						
+						else if(VKCode == '3'){
+							if(PixelShaderInArrayCount >= 3 ) ActivePixelShader = PixelShaderArray[2];
+						}
+						else if(VKCode == '4'){
+							if(PixelShaderInArrayCount >= 4 ) ActivePixelShader = PixelShaderArray[3];
+						}
+						else if(VKCode == '5'){
+							if(PixelShaderInArrayCount >= 5 ) ActivePixelShader = PixelShaderArray[4];
+						}
+						else if(VKCode == '6'){
+							if(PixelShaderInArrayCount >= 6 ) ActivePixelShader = PixelShaderArray[5];
+						}
 						
 						bool AltKeyWasDown = ((Message.lParam & (1 << 29)) != 0);
 						if((VKCode == VK_F4) && AltKeyWasDown){
@@ -347,6 +357,14 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			Width = WindowRect.right - WindowRect.left;
 			Height = WindowRect.bottom - WindowRect.top;
 			
+			static unsigned int AnimationCount = 1;
+			static int AnimationIndex = 0;
+			AnimationCount = (AnimationCount+1)%(50);
+			if(AnimationCount == 0){
+				AnimationIndex = (AnimationIndex+1)%PixelShaderInArrayCount;
+				ActivePixelShader = PixelShaderArray[AnimationIndex];
+			}
+			
             //ViewPort
             D3D11_VIEWPORT ViewPort;
             ViewPort.TopLeftX = 0.0f;
@@ -360,14 +378,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
             DeviceContext->RSSetViewports(1,&ViewPort);
             DeviceContext->Draw(VertexCount, 0);
 			
-            SwapChain->Present(1, 0);
-            
-            
-            
-            
-            
-            
-            
+			SwapChain->Present(1, 0);
         }
 	}
     else{
