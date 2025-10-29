@@ -1,6 +1,6 @@
+#inlcude Win32Platform.h
 
 #define ASSERT(x) if(!(x)) *(char*)0=0;
-
 #define TRIANGLE 1
 #define MAX_PIXEL_SHADER_COUNT 32
 
@@ -75,7 +75,7 @@ static IDXGISwapChain1* Win32GetSwapChain(ID3D11Device *Device, HWND Window,IDXG
 	SwapChainDesc1.SampleDesc = SampleDesc;
 	SwapChainDesc1.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	SwapChainDesc1.BufferCount = 2;
-	SwapChainDesc1.Scaling = DXGI_SCALING_STRETCH;
+	SwapChainDesc1.Scaling = DXGI_SCALING_NONE;
 	SwapChainDesc1.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 	SwapChainDesc1.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	SwapChainDesc1.Flags = 0;
@@ -252,9 +252,16 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				DeviceContext->IASetInputLayout(VSInputLayout);
 				
 				float oVertexBufferData[] {
-					0.0f,0.5f,0.0f,
-					0.25f,0.0f,0.0f,
-					-0.25f,0.0f,0.0f
+					//Clockwise Triangles
+
+					//TopLeft
+					-1.0f, 1.0f,0.0f,
+					 1.0f, 1.0f,0.0f,
+					-1.0f,-1.0f,0.0f,
+					//BottomRight	
+					 1.0f, 1.0f,0.0f,
+					 1.0f,-1.0f,0.0f,
+					-1.0f,-1.0f,0.0f,
 				};
 				VertexCount = sizeof(oVertexBufferData) / sizeof(oVertexBufferData[0]) / 3;
 				UINT VertexBufferSize = VertexCount * VertexSize;
@@ -294,10 +301,11 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 		ID3D11PixelShader *ActivePixelShader = PixelShaderArray[0];
 		ID3D11VertexShader *ActiveVertexShader = VertexShader;
 		
+
 		while(GlobalRunning){
 			
 			MSG Message;
-			while(PeekMessage(&Message,0,0,0,PM_REMOVE)){
+			while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE)){
 				
 				switch(Message.message){
 					case WM_QUIT:{
@@ -352,14 +360,14 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
             DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
 #endif
            
-			RECT WindowRect;
-			ASSERT(GetWindowRect(Window,&WindowRect));
-			Width = WindowRect.right - WindowRect.left;
-			Height = WindowRect.bottom - WindowRect.top;
+			RECT ClientRect;
+			ASSERT(GetClientRect(Window,&ClientRect));
+			Width = ClientRect.right - ClientRect.left;
+			Height = ClientRect.bottom - ClientRect.top;
 			
 			static unsigned int AnimationCount = 1;
 			static int AnimationIndex = 0;
-			AnimationCount = (AnimationCount+1)%(50);
+			AnimationCount = (AnimationCount+1)%(144);
 			if(AnimationCount == 0){
 				AnimationIndex = (AnimationIndex+1)%PixelShaderInArrayCount;
 				ActivePixelShader = PixelShaderArray[AnimationIndex];
@@ -378,7 +386,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
             DeviceContext->RSSetViewports(1,&ViewPort);
             DeviceContext->Draw(VertexCount, 0);
 			
-			SwapChain->Present(1, 0);
+			SwapChain->Present(0, 0);
         }
 	}
     else{
