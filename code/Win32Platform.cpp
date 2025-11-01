@@ -1,4 +1,4 @@
-#inlcude Win32Platform.h
+
 
 #define ASSERT(x) if(!(x)) *(char*)0=0;
 #define TRIANGLE 1
@@ -14,7 +14,7 @@
 #define global_variable static
 typedef int bool32;
 
-
+#include "Win32Platform.h"
 
 global_variable bool32 GlobalRunning = false;
 global_variable UINT PixelShaderInArrayCount = 0;
@@ -92,7 +92,8 @@ static ID3DBlob *Win32CompileShaderFromFile(LPCWSTR Filename, LPCSTR Entrypoint,
 	ID3DBlob *BlobCode;
 	ID3DBlob *BlobError;
 	
-	if(!(D3DCompileFromFile(Filename, NULL, NULL, Entrypoint, Target, D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY, 0, &BlobCode, &BlobError) == S_OK)){
+	HRESULT res;
+	if(!((res=D3DCompileFromFile(Filename, NULL, NULL, Entrypoint, Target, D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY, 0, &BlobCode, &BlobError)) == S_OK)){
 		if(BlobError){
 			LPCSTR Buffer = (LPCSTR)BlobError->GetBufferPointer();
 			OutputDebugStringA(Buffer);
@@ -301,7 +302,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 		ID3D11PixelShader *ActivePixelShader = PixelShaderArray[0];
 		ID3D11VertexShader *ActiveVertexShader = VertexShader;
 		
-
+		bool32 AnimationIsActive = false;
+		
 		while(GlobalRunning){
 			
 			MSG Message;
@@ -333,7 +335,9 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 						else if(VKCode == '6'){
 							if(PixelShaderInArrayCount >= 6 ) ActivePixelShader = PixelShaderArray[5];
 						}
-						
+						else if(VKCode == VK_SPACE){
+							AnimationIsActive ^= true;
+						}
 						bool AltKeyWasDown = ((Message.lParam & (1 << 29)) != 0);
 						if((VKCode == VK_F4) && AltKeyWasDown){
 							GlobalRunning = false;
@@ -365,13 +369,18 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			Width = ClientRect.right - ClientRect.left;
 			Height = ClientRect.bottom - ClientRect.top;
 			
+			
 			static unsigned int AnimationCount = 1;
+			
 			static int AnimationIndex = 0;
-			AnimationCount = (AnimationCount+1)%(144);
-			if(AnimationCount == 0){
-				AnimationIndex = (AnimationIndex+1)%PixelShaderInArrayCount;
-				ActivePixelShader = PixelShaderArray[AnimationIndex];
+			if(AnimationIsActive){
+				AnimationCount = (AnimationCount+1)%(144*16);
+				if(AnimationCount == 0){
+					AnimationIndex = (AnimationIndex+1)%PixelShaderInArrayCount;
+					ActivePixelShader = PixelShaderArray[AnimationIndex];
+				}
 			}
+			
 			
             //ViewPort
             D3D11_VIEWPORT ViewPort;
