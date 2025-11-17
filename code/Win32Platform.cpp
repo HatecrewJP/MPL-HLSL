@@ -22,6 +22,11 @@ global_variable bool32 GlobalRunning = false;
 global_variable UINT GlobalPixelShaderInArrayCount = 0;
 global_variable bool32 GlobalAnimationIsActive = false;
 
+global_variable ID3D11Device 			*GlobalDevice 			= NULL;
+global_variable IDXGISwapChain1 		*GlobalSwapChain 		= NULL;
+global_variable ID3D11DeviceContext 	*GlobalDeviceContext 	= NULL;
+global_variable ID3D11RenderTargetView 	*GlobalRenderTargetView = NULL;
+global_variable ID3D11Resource 			*GlobalFrameBuffer 		= NULL;
 
 global_variable ID3D11PixelShader 	*GlobalActivePixelShader;
 global_variable ID3D11VertexShader 	*GlobalActiveVertexShader;
@@ -32,11 +37,12 @@ global_variable UINT GlobalStrides[1];
 global_variable UINT GlobalOffsets[1];
 
 global_variable ID3D11Buffer* 			GlobalVertexBufferArray[32] = {};
-global_variable ID3D11Buffer* 			GlobalIndexBufferArray[64] = {};
-global_variable ID3D11VertexShader 		*GlobalVertexShader = NULL;
-global_variable ID3D11HullShader 		*GlobalHullShader = NULL;
-global_variable ID3D11DomainShader 		*GlobalDomainShader = NULL;
-global_variable ID3D11GeometryShader 	*GlobalGeometryShader = NULL;
+global_variable ID3D11Buffer* 			GlobalIndexBufferArray[64] 	= {};
+
+global_variable ID3D11VertexShader 		*GlobalVertexShader 		= NULL;
+global_variable ID3D11HullShader 		*GlobalHullShader 			= NULL;
+global_variable ID3D11DomainShader 		*GlobalDomainShader 		= NULL;
+global_variable ID3D11GeometryShader 	*GlobalGeometryShader 		= NULL;
 global_variable ID3D11PixelShader* 		GlobalPixelShaderArray[MAX_PIXEL_SHADER_COUNT];
 
 global_variable IndexedGeometryObject GlobalSquare;
@@ -54,7 +60,29 @@ LRESULT Wndproc(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam){
 	}
 	return DefWindowProcA(WindowHandle,Message,WParam,LParam);
 }
-
+internal void ResizeSwapChainBuffers(UINT NewWidth, UINT NewHeight){
+	GlobalDeviceContext->OMSetRenderTargets(0,0,0);
+	GlobalFrameBuffer->Release();
+	GlobalFrameBuffer = nullptr;
+	GlobalRenderTargetView->Release();
+	GlobalRenderTargetView = nullptr;
+	GlobalSwapChain->ResizeBuffers(0,NewWidth,NewHeight,DXGI_FORMAT_UNKNOWN,0);
+	if(GlobalSwapChain->GetBuffer(0,__uuidof(ID3D11Resource),(void**)&GlobalFrameBuffer)==S_OK){
+		ASSERT(GlobalFrameBuffer);
+		//RenderTargetView
+		if(GlobalDevice->CreateRenderTargetView(GlobalFrameBuffer,NULL,&GlobalRenderTargetView)==S_OK){
+			ASSERT(GlobalRenderTargetView);
+			OutputDebugStringA("Resize Success\n");
+		}
+		else{
+			OutputDebugStringA("Resize RTV failed\n");
+		}
+	}
+	else{
+		OutputDebugStringA("Resize Buffer failed\n");
+	}
+	
+}
 internal void Win32ProcessError(DWORD Error){
 	LPVOID lpMsgBuf = 0;
 	FormatMessage(
@@ -301,8 +329,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 	ATOM WindowAtom = RegisterClassExA(&WindowClass);
 	ASSERT(WindowAtom);
 	
-	int Width = 1920;
-	int Height = 1080;
+	UINT Width = 1920;
+	UINT Height = 1080;
 	
 	
 	
@@ -320,21 +348,19 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			D3D_FEATURE_LEVEL_9_1};
 		UINT FeatureLevelCount = sizeof(FeatureLevels)/sizeof(FeatureLevels[0]);
 		
-        ID3D11Device *Device;
-		ID3D11DeviceContext *DeviceContext = NULL;
+		RECT ClientRect;
+		ASSERT(GetClientRect(Window,&ClientRect));
+		
+		Width = ClientRect.right - ClientRect.left;
+		Height  = ClientRect.bottom - ClientRect.top;
         
 
-		
-		
-        IDXGISwapChain1 *SwapChain = NULL;
-		ID3D11RenderTargetView *RenderTargetView = NULL;
-        
-        
         D3D_FEATURE_LEVEL CurrentFeatureLevel;
 		//D3D11 Device
 		if(D3D11CreateDevice(NULL,D3D_DRIVER_TYPE_HARDWARE,NULL,D3D11_CREATE_DEVICE_DEBUG ,FeatureLevels,FeatureLevelCount,D3D11_SDK_VERSION,
-                             &Device,&CurrentFeatureLevel,&DeviceContext)==S_OK){
+                             &GlobalDevice,&CurrentFeatureLevel,&GlobalDeviceContext)==S_OK){
 			OutputDebugStringA("Device Created\n");
+			
 			
 			
 			//retrieve IDXGI Interfaces
@@ -342,10 +368,10 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			IDXGIAdapter *IdxgiAdapter = NULL;
 			IDXGIFactory2 *IdxgiFactory = NULL;
 			
-			Win32GetIDXGIInterfacesFromD3DDevice(Device, &IdxgiDevice, &IdxgiAdapter, &IdxgiFactory);
+			Win32GetIDXGIInterfacesFromD3DDevice(GlobalDevice, &IdxgiDevice, &IdxgiAdapter, &IdxgiFactory);
 
 			//Swap Chain
-			SwapChain = Win32GetSwapChain(Device,Window,IdxgiFactory);
+			GlobalSwapChain = Win32GetSwapChain(GlobalDevice,Window,IdxgiFactory);
 			
 			//Vertex Shader Compilation
 			ID3DBlob *BlobVSCode = Win32CompileShaderFromFile(L"VertexShader.hlsl","VSEntry","vs_5_0");
@@ -356,11 +382,11 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			OutputDebugStringA("VertexShader compiled\n");
 			
 			//Vertex Shader 
-			GlobalVertexShader = Win32CreateVertexShader(Device,CompiledVSShaderCode,VSShaderSize);
+			GlobalVertexShader = Win32CreateVertexShader(GlobalDevice,CompiledVSShaderCode,VSShaderSize);
 			ASSERT(GlobalVertexShader);
 			OutputDebugStringA("Vertex Shader created\n");
-			ID3D11InputLayout *VSInputLayout = Win32CreateVertexInputLayout(Device,DeviceContext,CompiledVSShaderCode,VSShaderSize);
-			DeviceContext->IASetInputLayout(VSInputLayout);
+			ID3D11InputLayout *VSInputLayout = Win32CreateVertexInputLayout(GlobalDevice,GlobalDeviceContext,CompiledVSShaderCode,VSShaderSize);
+			GlobalDeviceContext->IASetInputLayout(VSInputLayout);
 			
 			
 			
@@ -380,6 +406,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			UINT SquareIndices[]{
 				0,1,2,
 				2,1,3,
+				
 			};
 			
 			GlobalSquare.VertexData = SquareVertices;
@@ -392,7 +419,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			GlobalSquare.IndexCount = 6;
 			GlobalSquare.IndexDataSize = GlobalSquare.IndexSize * GlobalSquare.IndexCount;
 			
-			GlobalVertexBufferArray[0] = Win32CreateVertexBuffer(Device, GlobalSquare.VertexData, GlobalSquare.VertexDataSize);
+			GlobalVertexBufferArray[0] = Win32CreateVertexBuffer(GlobalDevice, GlobalSquare.VertexData, GlobalSquare.VertexDataSize);
 			D3D11_BUFFER_DESC VBDesc;
 			GlobalVertexBufferArray[0]->GetDesc(&VBDesc);
 			{
@@ -409,7 +436,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			IndexSubresourceData.SysMemPitch = 0;
 			IndexSubresourceData.SysMemSlicePitch = 0;
 			
-			res = Device->CreateBuffer(&IndexBufferDesc,&IndexSubresourceData,&GlobalIndexBufferArray[0]);
+			res = GlobalDevice->CreateBuffer(&IndexBufferDesc,&IndexSubresourceData,&GlobalIndexBufferArray[0]);
 			ASSERT(res == S_OK && GlobalIndexBufferArray[0]);
 			}
 			
@@ -440,7 +467,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			GlobalHexagon.IndexCount = 12;
 			GlobalHexagon.IndexDataSize = GlobalHexagon.IndexSize * GlobalHexagon.IndexCount;
 			
-			GlobalVertexBufferArray[1] = Win32CreateVertexBuffer(Device, GlobalHexagon.VertexData, GlobalHexagon.VertexDataSize);
+			GlobalVertexBufferArray[1] = Win32CreateVertexBuffer(GlobalDevice, GlobalHexagon.VertexData, GlobalHexagon.VertexDataSize);
 			
 			{
 			D3D11_BUFFER_DESC IndexBufferDesc;
@@ -456,41 +483,38 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			IndexSubresourceData.SysMemPitch = 0;
 			IndexSubresourceData.SysMemSlicePitch = 0;
 			
-			res = Device->CreateBuffer(&IndexBufferDesc,&IndexSubresourceData,&GlobalIndexBufferArray[1]);
+			res = GlobalDevice->CreateBuffer(&IndexBufferDesc,&IndexSubresourceData,&GlobalIndexBufferArray[1]);
 			ASSERT(res == S_OK && GlobalIndexBufferArray[1]);
 			}
 			
 			//Adding PixelShaders
-			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(Device,L"PixelShaderWhite.hlsl","PSEntry","ps_5_0"));
-			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(Device,L"PixelShaderRed.hlsl","PSEntry","ps_5_0"));
-			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(Device,L"PixelShaderGreen.hlsl","PSEntry","ps_5_0"));
-			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(Device,L"PixelShaderBlue.hlsl","PSEntry","ps_5_0"));
+			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"PixelShaderWhite.hlsl","PSEntry","ps_5_0"));
+			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"PixelShaderRed.hlsl","PSEntry","ps_5_0"));
+			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"PixelShaderGreen.hlsl","PSEntry","ps_5_0"));
+			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"PixelShaderBlue.hlsl","PSEntry","ps_5_0"));
 			
-			//BackBuffer
-			ID3D11Resource *BackBuffer = NULL;
-			if(SwapChain->GetBuffer(0,__uuidof(ID3D11Resource),(void**)&BackBuffer)==S_OK){
-				ASSERT(BackBuffer);
-				
+			//FrameBuffer
+			if(GlobalSwapChain->GetBuffer(0,__uuidof(ID3D11Resource),(void**)&GlobalFrameBuffer)==S_OK){
+				ASSERT(GlobalFrameBuffer);
 				//RenderTargetView
-				if(Device->CreateRenderTargetView(BackBuffer,NULL,&RenderTargetView)==S_OK){
-					ASSERT(RenderTargetView);
-					
-					OutputDebugStringA("RenderTargetView created\n");
-					
+				if(GlobalDevice->CreateRenderTargetView(GlobalFrameBuffer,NULL,&GlobalRenderTargetView)==S_OK){
+					ASSERT(GlobalRenderTargetView);
+					OutputDebugStringA("Resize Success\n");
 				}
 				else{
-					OutputDebugStringA("RenderTargetView failed\n");
+					OutputDebugStringA("Resize RTV failed\n");
 				}
-			}
+				}
 			else{
-				OutputDebugStringA("BackBuffer failed\n");
+				OutputDebugStringA("Resize Buffer failed\n");
 			}
+			
 			//HUllShader
 			ID3DBlob *HSBlob = Win32CompileShaderFromFile(L"HullShader.hlsl","HSEntry","hs_5_0");
 			ASSERT(HSBlob);
 			void *CompiledHS = HSBlob->GetBufferPointer();
 			SIZE_T CompiledHSSize = HSBlob->GetBufferSize();
-			res = Device->CreateHullShader(CompiledHS,CompiledHSSize,nullptr,&GlobalHullShader);
+			res = GlobalDevice->CreateHullShader(CompiledHS,CompiledHSSize,nullptr,&GlobalHullShader);
 			ASSERT(res==S_OK);
 			
 			//DomainShader
@@ -498,7 +522,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			ASSERT(DSBlob);
 			void *CompiledDS = DSBlob->GetBufferPointer();
 			SIZE_T CompiledDSSize = DSBlob->GetBufferSize();
-			res = Device->CreateDomainShader(CompiledDS,CompiledDSSize,nullptr,&GlobalDomainShader);
+			res = GlobalDevice->CreateDomainShader(CompiledDS,CompiledDSSize,nullptr,&GlobalDomainShader);
 			ASSERT(res==S_OK);
 			
 			//GeometryShader
@@ -506,7 +530,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			ASSERT(GSBlob);
 			void *CompiledGS = GSBlob->GetBufferPointer();
 			SIZE_T CompiledGSSize = GSBlob->GetBufferSize();
-			res = Device->CreateGeometryShader(CompiledGS,CompiledGSSize,nullptr,&GlobalGeometryShader);
+			res = GlobalDevice->CreateGeometryShader(CompiledGS,CompiledGSSize,nullptr,&GlobalGeometryShader);
 			ASSERT(res==S_OK);
 			
 			//Rasterizer
@@ -523,7 +547,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			RasterizerDesc.AntialiasedLineEnable = FALSE;
 			
 			ID3D11RasterizerState *RasterizerState = NULL;
-			res = Device->CreateRasterizerState(&RasterizerDesc,&RasterizerState);
+			res = GlobalDevice->CreateRasterizerState(&RasterizerDesc,&RasterizerState);
 			ASSERT(RasterizerState);
 			
 			
@@ -539,18 +563,23 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			GlobalRunning =  true;
 			
-			//MainLoop
+			//Loop
 			while(GlobalRunning){
 				
-				MessageLoop(Device);
+				MessageLoop(GlobalDevice);
 				
 				if(!GlobalRunning) break;
 				
-				RECT ClientRect;
 				ASSERT(GetClientRect(Window,&ClientRect));
-				Width = ClientRect.right - ClientRect.left;
-				Height = ClientRect.bottom - ClientRect.top;
+				UINT NewWidth  = ClientRect.right - ClientRect.left;
+				UINT NewHeight = ClientRect.bottom - ClientRect.top;
 				
+				if(Width != NewWidth || Height!= NewHeight){
+					Width = NewWidth;
+					Height = NewHeight;
+					ResizeSwapChainBuffers(Width,Height);
+					
+				}
 				
 				static unsigned int AnimationCount = 1;
 				
@@ -582,50 +611,54 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				
 				
 				//
-				DeviceContext->ClearRenderTargetView(RenderTargetView, RGBA);
+				GlobalDeviceContext->ClearRenderTargetView(GlobalRenderTargetView, RGBA);
 				
 				//Draw Full Square
-				DeviceContext->RSSetViewports(1,&ViewPort);
-				DeviceContext->RSSetState(NULL);
-				DeviceContext->IASetVertexBuffers(0, 1, &GlobalActiveVertexBuffer, GlobalStrides, GlobalOffsets);
-				DeviceContext->IASetIndexBuffer(GlobalActiveIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
-				DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-				DeviceContext->VSSetShader(GlobalActiveVertexShader, NULL, 0);
-				DeviceContext->PSSetShader(GlobalPixelShaderArray[0], NULL, 0);
-				DeviceContext->GSSetShader(nullptr,nullptr,0);
-				DeviceContext->OMSetRenderTargets(1, &RenderTargetView, NULL);
+				GlobalDeviceContext->RSSetViewports(1,&ViewPort);
+				GlobalDeviceContext->RSSetState(NULL);
+				GlobalDeviceContext->IASetVertexBuffers(0, 1, &GlobalActiveVertexBuffer, GlobalStrides, GlobalOffsets);
+				GlobalDeviceContext->IASetIndexBuffer(GlobalActiveIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+				GlobalDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+				GlobalDeviceContext->VSSetShader(GlobalActiveVertexShader, NULL, 0);
+				GlobalDeviceContext->PSSetShader(GlobalPixelShaderArray[0], NULL, 0);
+				GlobalDeviceContext->GSSetShader(nullptr,nullptr,0);
+				GlobalDeviceContext->OMSetRenderTargets(1, &GlobalRenderTargetView, NULL);
 				
-				DeviceContext->DrawIndexed(GlobalActiveIndexCount, 0, 0);
+				GlobalDeviceContext->DrawIndexed(GlobalActiveIndexCount, 0, 0);
 
 				
 				//Draw Geometry Lines
-				DeviceContext->RSSetViewports(1,&ViewPort);
-				DeviceContext->RSSetScissorRects(1,&ScissorRect);
-				DeviceContext->RSSetState(RasterizerState);
+				GlobalDeviceContext->RSSetViewports(1,&ViewPort);
+				GlobalDeviceContext->RSSetScissorRects(1,&ScissorRect);
+				GlobalDeviceContext->RSSetState(RasterizerState);
 				
-				DeviceContext->IASetVertexBuffers(0,1,&GlobalActiveVertexBuffer, GlobalStrides, GlobalOffsets);
-				DeviceContext->IASetIndexBuffer(GlobalActiveIndexBuffer,DXGI_FORMAT_R32_UINT,0);
+				GlobalDeviceContext->IASetVertexBuffers(0,1,&GlobalActiveVertexBuffer, GlobalStrides, GlobalOffsets);
+				GlobalDeviceContext->IASetIndexBuffer(GlobalActiveIndexBuffer,DXGI_FORMAT_R32_UINT,0);
 				
-				DeviceContext->VSSetShader(GlobalActiveVertexShader,NULL,0);
-				DeviceContext->PSSetShader(GlobalActivePixelShader,NULL,0);
-				DeviceContext->OMSetRenderTargets(1,&RenderTargetView,NULL);
+				GlobalDeviceContext->VSSetShader(GlobalActiveVertexShader,NULL,0);
+				GlobalDeviceContext->PSSetShader(GlobalActivePixelShader,NULL,0);
+				GlobalDeviceContext->OMSetRenderTargets(1,&GlobalRenderTargetView,NULL);
 #if 0		
-				DeviceContext->HSSetShader(GlobalHullShader,nullptr,0);
-				DeviceContext->DSSetShader(GlobalDomainShader,nullptr,0);
-				DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
+				GlobalDeviceContext->HSSetShader(GlobalHullShader,nullptr,0);
+				GlobalDeviceContext->DSSetShader(GlobalDomainShader,nullptr,0);
+				GlobalDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
 				
 #else
-				DeviceContext->GSSetShader(GlobalGeometryShader,nullptr,0);
-				DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+				GlobalDeviceContext->GSSetShader(GlobalGeometryShader,nullptr,0);
+				GlobalDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 				
 #endif	
-				DeviceContext->DrawIndexed(GlobalActiveIndexCount, 0, 0);
+				GlobalDeviceContext->DrawIndexed(GlobalActiveIndexCount, 0, 0);
 
 				
 				
 				
 				
-				SwapChain->Present(0, 0);
+				GlobalSwapChain->Present(0, 0);
+				
+			
+				
+				
 			}
 		}
 		else{

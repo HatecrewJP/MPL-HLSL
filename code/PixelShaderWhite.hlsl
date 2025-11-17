@@ -14,5 +14,9 @@ ps_output PSEntry(const ps_input input)
 	ps_output output;
 	
 	output.color = float4(1,1,1,1);
+
+	
+
+	
 	return output;
 }
