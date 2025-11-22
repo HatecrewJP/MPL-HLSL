@@ -626,7 +626,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				
 				static int AnimationIndex = 0;
 				if(GlobalAnimationIsActive){
-					AnimationCount = (AnimationCount+1)%(144*16);
+					AnimationCount = (AnimationCount+1)%(60);
 					if(AnimationCount == 0){
 						AnimationIndex = (AnimationIndex+1)%GlobalPixelShaderInArrayCount;
 						GlobalActivePixelShader = GlobalPixelShaderArray[AnimationIndex];
@@ -696,7 +696,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				GlobalDeviceContext->Dispatch(1,1,1);
 				
 				
-				GlobalSwapChain->Present(0, 0);
+				GlobalSwapChain->Present(1, 0);
 				
 			
 				
