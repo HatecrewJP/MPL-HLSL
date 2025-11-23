@@ -51,8 +51,12 @@ global_variable ID3D11PixelShader* 		GlobalPixelShaderArray[MAX_PIXEL_SHADER_COU
 global_variable IndexedGeometryObject GlobalSquare;
 global_variable IndexedGeometryObject GlobalHexagon;
 
+global_variable ID3D11ShaderResourceView *GlobalCSShaderResourceView = nullptr;
 global_variable ID3D11ComputeShader *GlobalComputeShader = nullptr;
+global_variable ID3D11Texture2D *GlobalCSShaderResource = nullptr;
 global_variable ID3D11UnorderedAccessView *GlobalUAV = nullptr;
+ID3D11Texture2D *GlobalUAVTexture = nullptr;
+
 
 LRESULT Wndproc(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam){
 	switch(Message){
@@ -88,6 +92,49 @@ internal void ResizeSwapChainBuffers(UINT NewWidth, UINT NewHeight){
 	}
 	
 }
+
+internal void UpdateCSTexture(UINT Width, UINT Height){
+	if(GlobalCSShaderResource){
+		GlobalCSShaderResource->Release();
+	}
+	
+	//Create new Texture2D
+	D3D11_TEX2D_SRV CSSRV;
+	CSSRV.MostDetailedMip = 0;
+	CSSRV.MipLevels = 1;
+	
+	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc;
+	SRVDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	SRVDesc.Texture2D =  CSSRV;
+	
+	UINT TextureSize = Width * Height * 4;
+	void *CSShaderResourceData =  VirtualAlloc(nullptr,TextureSize,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);
+	ASSERT(CSShaderResourceData);
+	
+	D3D11_SUBRESOURCE_DATA CSSubresourceData;
+	CSSubresourceData.pSysMem = CSShaderResourceData;
+	CSSubresourceData.SysMemPitch = 4;
+	CSSubresourceData.SysMemSlicePitch = 0;
+	D3D11_TEXTURE2D_DESC Tex2DDesc;
+	GlobalFrameBuffer->GetDesc(&Tex2DDesc);
+	Tex2DDesc.BindFlags |= (D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS);
+	ASSERT(GlobalDevice->CreateTexture2D(&Tex2DDesc,&CSSubresourceData,&GlobalCSShaderResource)==S_OK);
+
+	//Create new UAV
+	D3D11_BUFFER_UAV UAVElementDesc;
+	UAVElementDesc.FirstElement = 0;
+	UAVElementDesc.NumElements = TextureSize / 4;
+	UAVElementDesc.Flags = 0;
+	
+	D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc;
+	UAVDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+	UAVDesc.Buffer = UAVElementDesc;
+
+	ASSERT(GlobalDevice->CreateUnorderedAccessView(GlobalCSShaderResource,&UAVDesc,&GlobalUAV)==S_OK);
+}
+
 internal void Win32ProcessError(DWORD Error){
 	LPVOID lpMsgBuf = 0;
 	FormatMessage(
@@ -494,21 +541,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"PixelShaderGreen.hlsl","PSEntry","ps_5_0"));
 			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"PixelShaderBlue.hlsl","PSEntry","ps_5_0"));
 			
-			//FrameBuffer
-			if(GlobalSwapChain->GetBuffer(0,__uuidof(ID3D11Resource),(void**)&GlobalFrameBuffer)==S_OK){
-				ASSERT(GlobalFrameBuffer);
-				//RenderTargetView
-				if(GlobalDevice->CreateRenderTargetView(GlobalFrameBuffer,NULL,&GlobalRenderTargetView)==S_OK){
-					ASSERT(GlobalRenderTargetView);
-					OutputDebugStringA("Resize Success\n");
-				}
-				else{
-					OutputDebugStringA("Resize RTV failed\n");
-				}
-				}
-			else{
-				OutputDebugStringA("Resize Buffer failed\n");
-			}
+			
 			
 			//HUllShader
 			ID3DBlob *HSBlob = Win32CompileShaderFromFile(L"HullShader.hlsl","HSEntry","hs_5_0");
@@ -551,6 +584,34 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			res = GlobalDevice->CreateRasterizerState(&RasterizerDesc,&RasterizerState);
 			ASSERT(RasterizerState);
 			
+			
+			
+		
+
+			
+			
+			
+			
+			
+			
+			
+			
+			//FrameBuffer
+			if(GlobalSwapChain->GetBuffer(0,__uuidof(ID3D11Resource),(void**)&GlobalFrameBuffer)==S_OK){
+				ASSERT(GlobalFrameBuffer);
+				//RenderTargetView
+				if(GlobalDevice->CreateRenderTargetView(GlobalFrameBuffer,NULL,&GlobalRenderTargetView)==S_OK){
+					ASSERT(GlobalRenderTargetView);
+					OutputDebugStringA("Resize Success\n");
+				}
+				else{
+					OutputDebugStringA("Resize RTV failed\n");
+				}
+				}
+			else{
+				OutputDebugStringA("Resize Buffer failed\n");
+			}
+			
 			//ComputeShader
 			ID3DBlob *CSBlob = Win32CompileShaderFromFile(L"ComputeShader.hlsl","CSEntry","cs_5_0");
 			ASSERT(CSBlob);
@@ -559,37 +620,13 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			res = GlobalDevice->CreateComputeShader(CompiledCS,CompiledCSSize,nullptr,&GlobalComputeShader);
 			ASSERT(res==S_OK);
 			
-			UINT UAVBufferSize = MB(64);
-			ID3D11Buffer *UAVBuffer = nullptr;
-			D3D11_BUFFER_DESC UAVBufferDesc;
-			UAVBufferDesc.ByteWidth = UAVBufferSize;
-			UAVBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-			UAVBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
-			UAVBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE | D3D11_CPU_ACCESS_READ;
-			UAVBufferDesc.MiscFlags = 0;
-			UAVBufferDesc.StructureByteStride = 0;
 			
-			void *UAVData = VirtualAlloc(nullptr,UAVBufferSize,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);
-			ASSERT(UAVData);
-			D3D11_SUBRESOURCE_DATA UAVSubresourceData;
-			UAVSubresourceData.pSysMem = UAVData;
-			UAVSubresourceData.SysMemPitch = 0;
-			UAVSubresourceData.SysMemSlicePitch = 0;
-			ASSERT(GlobalDevice->CreateBuffer(&UAVBufferDesc,&UAVSubresourceData,&UAVBuffer)==S_OK);
+			UpdateCSTexture(Width,Height);
 			
 			
-			D3D11_BUFFER_UAV UAVElementDesc;
-			UAVElementDesc.FirstElement = 0;
-			UAVElementDesc.NumElements = UAVBufferSize / 4;
-			UAVElementDesc.Flags = 0;
 			
-			D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc;
-			UAVDesc.Format = DXGI_FORMAT_R16G16_UINT;
-			UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-			UAVDesc.Buffer = UAVElementDesc;
+			
 
-			ASSERT(GlobalDevice->CreateUnorderedAccessView(UAVBuffer,&UAVDesc,&GlobalUAV)==S_OK);
-			
 			
 			
 			//Initializing active shader
@@ -619,6 +656,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					Width = NewWidth;
 					Height = NewHeight;
 					ResizeSwapChainBuffers(Width,Height);
+					UpdateCSTexture(Width,Height);
 					
 				}
 				
@@ -691,11 +729,13 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 #endif	
 				GlobalDeviceContext->DrawIndexed(GlobalActiveIndexCount, 0, 0);
 
+
+				GlobalDeviceContext->CopyResource(GlobalCSShaderResource, GlobalFrameBuffer);
 				GlobalDeviceContext->CSSetUnorderedAccessViews(0,1,&GlobalUAV,nullptr);
 				GlobalDeviceContext->CSSetShader(GlobalComputeShader,nullptr,0);
-				GlobalDeviceContext->Dispatch(1,1,1);
+				GlobalDeviceContext->Dispatch(Width,Height,1);
 				
-				
+				GlobalDeviceContext->CopyResource(GlobalFrameBuffer,GlobalCSShaderResource);
 				GlobalSwapChain->Present(1, 0);
 				
 			
