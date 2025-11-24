@@ -15,12 +15,16 @@
 #include <d3dcompiler.h>
 #include <windows.h>
 
+
 #define internal static
 #define global_variable static
 
-#include "Win32Platform.h"
+struct ShaderCode{
+	void *Code;
+	size_t Size;
+};
 
-internal struct IndexedGeometryObject{
+struct IndexedGeometryObject{
 	void *VertexData;
 	UINT VertexSize;
 	UINT VertexCount;
@@ -31,11 +35,18 @@ internal struct IndexedGeometryObject{
 	UINT IndexCount;
 	UINT IndexDataSize;
 };
+#include "Win32Platform.h"
+
+
+
 
 
 global_variable bool GlobalRunning = false;
-global_variable UINT GlobalPixelShaderInArrayCount = 0;
 global_variable bool GlobalAnimationIsActive = false;
+
+
+global_variable UINT GlobalPixelShaderInArrayCount = 0;
+global_variable UINT GlobalVertexBufferCount = 0;
 
 global_variable ID3D11Device 			*GlobalDevice 			= NULL;
 global_variable IDXGISwapChain1 		*GlobalSwapChain 		= NULL;
@@ -60,8 +71,9 @@ global_variable ID3D11DomainShader 		*GlobalDomainShader 		= NULL;
 global_variable ID3D11GeometryShader 	*GlobalGeometryShader 		= NULL;
 global_variable ID3D11PixelShader* 		GlobalPixelShaderArray[MAX_PIXEL_SHADER_COUNT];
 
-global_variable IndexedGeometryObject GlobalSquare;
-global_variable IndexedGeometryObject GlobalHexagon;
+
+global_variable IndexedGeometryObject GlobalIndexedGeometryArray[64];
+global_variable unsigned int IndexedGeometryCount = 0;
 
 global_variable ID3D11ShaderResourceView *GlobalCSShaderResourceView = nullptr;
 global_variable ID3D11ComputeShader *GlobalComputeShader = nullptr;
@@ -131,41 +143,33 @@ internal void MessageLoop(ID3D11Device* Device){
 					GlobalAnimationIsActive ^= true;
 				}
 				else if(VKCode == 'R'){
-					HRESULT res;
-					ID3DBlob *HSBlob;
 					ASSERT(GlobalHullShader)
 					GlobalHullShader->Release();
-					HSBlob = Win32CompileShaderFromFile(L"HullShader.hlsl","HSEntry","hs_5_0");
-					void* x = HSBlob->GetBufferPointer();
-					ASSERT(HSBlob);
-					void *CompiledHS = HSBlob->GetBufferPointer();
-					SIZE_T CompiledHSSize = HSBlob->GetBufferSize();
-					res = Device->CreateHullShader(CompiledHS,CompiledHSSize,nullptr,&GlobalHullShader);
+					ShaderCode HSCode = Win32CompileShaderFromFile(L"HullShader.hlsl","HSEntry","hs_5_0");
+					
+					HRESULT res = Device->CreateHullShader(HSCode.Code,HSCode.Size,nullptr,&GlobalHullShader);
 					ASSERT(res==S_OK);
 					
-					ID3DBlob *DSBlob;
 					ASSERT(GlobalDomainShader)
 					GlobalDomainShader->Release();
-					DSBlob = Win32CompileShaderFromFile(L"DomainShader.hlsl","DSEntry","ds_5_0");
-					ASSERT(DSBlob);
-					void *CompiledDS = DSBlob->GetBufferPointer();
-					SIZE_T CompiledDSSize = DSBlob->GetBufferSize();
-					res = Device->CreateDomainShader(CompiledDS,CompiledDSSize,nullptr,&GlobalDomainShader);
+					ShaderCode DSCode = Win32CompileShaderFromFile(L"DomainShader.hlsl","DSEntry","ds_5_0");
+					
+					res = Device->CreateDomainShader(DSCode.Code,DSCode.Size,nullptr,&GlobalDomainShader);
 					ASSERT(res==S_OK);
 				}
 				
 				else if(VKCode == 'H'){
 					GlobalActiveVertexBuffer = GlobalVertexBufferArray[1];
 					GlobalActiveIndexBuffer = GlobalIndexBufferArray[1];
-					GlobalActiveIndexCount = GlobalHexagon.IndexCount;
-					GlobalStrides[0] = GlobalHexagon.VertexSize;
+					GlobalActiveIndexCount = GlobalIndexedGeometryArray[1].IndexCount;
+					GlobalStrides[0] = GlobalIndexedGeometryArray[1].VertexSize;
 					GlobalActivePixelShader = GlobalPixelShaderArray[2];
 				}
 				else if(VKCode == 'S'){
 					GlobalActiveVertexBuffer = GlobalVertexBufferArray[0];
 					GlobalActiveIndexBuffer = GlobalIndexBufferArray[0];
-					GlobalActiveIndexCount = GlobalSquare.IndexCount;
-					GlobalStrides[0] = GlobalSquare.VertexSize;
+					GlobalActiveIndexCount = GlobalIndexedGeometryArray[0].IndexCount;
+					GlobalStrides[0] = GlobalIndexedGeometryArray[0].VertexSize;
 					GlobalActivePixelShader = GlobalPixelShaderArray[0];
 				}
 				bool AltKeyWasDown = ((Message.lParam & (1 << 29)) != 0);
@@ -241,21 +245,25 @@ internal IDXGISwapChain1* Win32GetSwapChain(
 }
 
 //Shader compilation functions
-internal ID3DBlob* Win32CompileShaderFromFile(LPCWSTR Filename, LPCSTR Entrypoint, LPCSTR Target){
+internal ShaderCode Win32CompileShaderFromFile(LPCWSTR Filename, LPCSTR Entrypoint, LPCSTR Target){
 	ID3DBlob *BlobCode;
 	ID3DBlob *BlobError;
-	
+	ShaderCode Result = {};
 	HRESULT res;
 	if(!((res=D3DCompileFromFile(Filename, NULL, NULL, Entrypoint, Target, D3DCOMPILE_DEBUG, 0, &BlobCode, &BlobError)) == S_OK)){
 		if(BlobError){
 			LPCSTR Buffer = (LPCSTR)BlobError->GetBufferPointer();
 			OutputDebugStringA(Buffer);
 		}
-		return NULL;
+		return Result;
 	}
 	
 	ASSERT(BlobCode);
-	return BlobCode;
+	
+	Result.Code = BlobCode->GetBufferPointer();
+	Result.Size = BlobCode->GetBufferSize();
+	
+	return Result;
 }
 
 //Buffer functions
@@ -291,7 +299,7 @@ internal ID3D11InputLayout* Win32CreateVertexInputLayout(
 	ID3D11Device *Device, 
 	ID3D11DeviceContext *DeviceContext,
 	void *CompiledVSShaderCode, 
-	size_t ShaderSize)#
+	size_t ShaderSize)
 {
 	D3D11_INPUT_ELEMENT_DESC VSInputElementDesc;
 	VSInputElementDesc.SemanticName = "SV_POSITION";
@@ -306,6 +314,54 @@ internal ID3D11InputLayout* Win32CreateVertexInputLayout(
 	ASSERT(Device->CreateInputLayout(&VSInputElementDesc,1,CompiledVSShaderCode,ShaderSize,&VSInputLayout)==S_OK);
 	return VSInputLayout;
 	
+}
+
+
+internal void CreateVBForIndexedGeometry(
+	float *GeometryData,
+	unsigned int VertexCount, 
+	unsigned int *IndexData,
+	unsigned int IndexCount)
+{
+	IndexedGeometryObject NewObject;
+	
+	NewObject.VertexData = GeometryData;
+	NewObject.VertexSize = sizeof(float) * 3;
+	NewObject.VertexCount = VertexCount;
+	NewObject.VertexDataSize = NewObject.VertexCount * NewObject.VertexSize;
+	
+	NewObject.IndexData = IndexData;
+	NewObject.IndexSize = sizeof(UINT);
+	NewObject.IndexCount = IndexCount;
+	NewObject.IndexDataSize = NewObject.IndexSize * NewObject.IndexCount;
+	
+	GlobalIndexedGeometryArray[IndexedGeometryCount++]=NewObject;
+	
+	GlobalVertexBufferArray[GlobalVertexBufferCount] = Win32CreateVertexBuffer(GlobalDevice, NewObject.VertexData, NewObject.VertexDataSize);
+	
+	D3D11_BUFFER_DESC VBDesc;
+	GlobalVertexBufferArray[GlobalVertexBufferCount]->GetDesc(&VBDesc);
+	
+	D3D11_BUFFER_DESC IndexBufferDesc;
+	IndexBufferDesc.ByteWidth = NewObject.IndexDataSize;
+	IndexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	IndexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	IndexBufferDesc.CPUAccessFlags = 0;
+	IndexBufferDesc.MiscFlags = 0;
+	IndexBufferDesc.StructureByteStride = 0;
+	
+	D3D11_SUBRESOURCE_DATA IndexSubresourceData;
+	IndexSubresourceData.pSysMem = NewObject.IndexData;
+	IndexSubresourceData.SysMemPitch = 0;
+	IndexSubresourceData.SysMemSlicePitch = 0;
+	
+	HRESULT res = GlobalDevice->CreateBuffer(
+		&IndexBufferDesc,
+		&IndexSubresourceData,
+		&GlobalIndexBufferArray[GlobalVertexBufferCount]);
+		
+	ASSERT(res == S_OK && GlobalIndexBufferArray[GlobalVertexBufferCount]);
+	GlobalVertexBufferCount++;
 }
 
 //Shader Creation functions
@@ -326,12 +382,10 @@ internal ID3D11PixelShader* Win32CreatePixelShader(
 	LPCSTR Target)
 {
 	//Pixel Shader
-	ID3DBlob *BlobPSCode = Win32CompileShaderFromFile(Filename,Entrypoint,Target);
-	void *CompiledPSShaderCode = BlobPSCode->GetBufferPointer();
-	size_t PSShaderSize = BlobPSCode->GetBufferSize();
-	ASSERT(CompiledPSShaderCode);
-	ID3D11PixelShader *PixelShader = NULL;
-	ASSERT(Device->CreatePixelShader(CompiledPSShaderCode,PSShaderSize,NULL,&PixelShader)==S_OK);
+	ShaderCode PSCode = Win32CompileShaderFromFile(Filename,Entrypoint,Target);
+	if(!PSCode.Code) return nullptr;
+	ID3D11PixelShader *PixelShader = nullptr;
+	ASSERT(Device->CreatePixelShader(PSCode.Code,PSCode.Size,NULL,&PixelShader)==S_OK);
 	return PixelShader;
 	
 }
@@ -420,6 +474,7 @@ internal void UpdateCSTexture(UINT Width, UINT Height){
 }
 
 
+
 int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow){
 	//Windows Window
 	WNDCLASSEXA WindowClass;
@@ -479,25 +534,21 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			//Swap Chain
 			GlobalSwapChain = Win32GetSwapChain(GlobalDevice,Window,IdxgiFactory);
 			
-			//Vertex Shader Compilation
-			ID3DBlob *BlobVSCode = Win32CompileShaderFromFile(L"VertexShader.hlsl","VSEntry","vs_5_0");
-			ASSERT(BlobVSCode);
-			void *CompiledVSShaderCode = BlobVSCode->GetBufferPointer();
-			size_t VSShaderSize = BlobVSCode->GetBufferSize();
-			ASSERT(CompiledVSShaderCode);
-			OutputDebugStringA("VertexShader compiled\n");
-			
 			//Vertex Shader 
-			GlobalVertexShader = Win32CreateVertexShader(GlobalDevice,CompiledVSShaderCode,VSShaderSize);
+			ShaderCode VSCode = Win32CompileShaderFromFile(L"VertexShader.hlsl","VSEntry","vs_5_0");
+			GlobalVertexShader = Win32CreateVertexShader(GlobalDevice,VSCode.Code,VSCode.Size);
 			ASSERT(GlobalVertexShader);
-			OutputDebugStringA("Vertex Shader created\n");
-			ID3D11InputLayout *VSInputLayout = Win32CreateVertexInputLayout(GlobalDevice,GlobalDeviceContext,CompiledVSShaderCode,VSShaderSize);
-			GlobalDeviceContext->IASetInputLayout(VSInputLayout);
 			
+			OutputDebugStringA("Vertex Shader created\n");
+			//Input Layout
+			ID3D11InputLayout *VSInputLayout = Win32CreateVertexInputLayout(
+				GlobalDevice,
+				GlobalDeviceContext,
+				VSCode.Code,
+				VSCode.Size);
 			
 			
 			//Square Object
-			
 			float SquareVertices[] {
 				//Clockwise Triangles
 
@@ -514,37 +565,12 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				2,1,3,
 				
 			};
+			CreateVBForIndexedGeometry(
+				SquareVertices,
+				ArrayCount(SquareVertices),
+				SquareIndices,
+				ArrayCount(SquareIndices));
 			
-			GlobalSquare.VertexData = SquareVertices;
-			GlobalSquare.VertexSize = sizeof(float) * 3;
-			GlobalSquare.VertexCount = 4;
-			GlobalSquare.VertexDataSize = GlobalSquare.VertexCount * GlobalSquare.VertexSize;
-			
-			GlobalSquare.IndexData = SquareIndices;
-			GlobalSquare.IndexSize = sizeof(UINT);
-			GlobalSquare.IndexCount = 6;
-			GlobalSquare.IndexDataSize = GlobalSquare.IndexSize * GlobalSquare.IndexCount;
-			
-			GlobalVertexBufferArray[0] = Win32CreateVertexBuffer(GlobalDevice, GlobalSquare.VertexData, GlobalSquare.VertexDataSize);
-			D3D11_BUFFER_DESC VBDesc;
-			GlobalVertexBufferArray[0]->GetDesc(&VBDesc);
-			{
-			D3D11_BUFFER_DESC IndexBufferDesc;
-			IndexBufferDesc.ByteWidth = GlobalSquare.IndexDataSize;
-			IndexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-			IndexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-			IndexBufferDesc.CPUAccessFlags = 0;
-			IndexBufferDesc.MiscFlags = 0;
-			IndexBufferDesc.StructureByteStride = 0;
-			
-			D3D11_SUBRESOURCE_DATA IndexSubresourceData;
-			IndexSubresourceData.pSysMem = GlobalSquare.IndexData;
-			IndexSubresourceData.SysMemPitch = 0;
-			IndexSubresourceData.SysMemSlicePitch = 0;
-			
-			res = GlobalDevice->CreateBuffer(&IndexBufferDesc,&IndexSubresourceData,&GlobalIndexBufferArray[0]);
-			ASSERT(res == S_OK && GlobalIndexBufferArray[0]);
-			}
 			
 			
 			//Hexagon Object
@@ -562,36 +588,14 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				1,4,2,
 				4,3,2,
 			};
+			CreateVBForIndexedGeometry(
+				HexagonVertices,
+				ArrayCount(HexagonVertices),
+				HexagonIndices,
+				ArrayCount(HexagonIndices));
 			
 			
-			GlobalHexagon.VertexData = HexagonVertices;
-			GlobalHexagon.VertexSize = sizeof(float) * 3;
-			GlobalHexagon.VertexCount = 6;
-			GlobalHexagon.VertexDataSize = GlobalHexagon.VertexCount * GlobalHexagon.VertexSize;
-			GlobalHexagon.IndexData = HexagonIndices;
-			GlobalHexagon.IndexSize = sizeof(UINT);
-			GlobalHexagon.IndexCount = 12;
-			GlobalHexagon.IndexDataSize = GlobalHexagon.IndexSize * GlobalHexagon.IndexCount;
 			
-			GlobalVertexBufferArray[1] = Win32CreateVertexBuffer(GlobalDevice, GlobalHexagon.VertexData, GlobalHexagon.VertexDataSize);
-			
-			{
-			D3D11_BUFFER_DESC IndexBufferDesc;
-			IndexBufferDesc.ByteWidth = GlobalHexagon.IndexDataSize;
-			IndexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-			IndexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-			IndexBufferDesc.CPUAccessFlags = 0;
-			IndexBufferDesc.MiscFlags = 0;
-			IndexBufferDesc.StructureByteStride = 0;
-			
-			D3D11_SUBRESOURCE_DATA IndexSubresourceData;
-			IndexSubresourceData.pSysMem = GlobalHexagon.IndexData;
-			IndexSubresourceData.SysMemPitch = 0;
-			IndexSubresourceData.SysMemSlicePitch = 0;
-			
-			res = GlobalDevice->CreateBuffer(&IndexBufferDesc,&IndexSubresourceData,&GlobalIndexBufferArray[1]);
-			ASSERT(res == S_OK && GlobalIndexBufferArray[1]);
-			}
 			
 			//Adding PixelShaders
 			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"PixelShaderWhite.hlsl","PSEntry","ps_5_0"));
@@ -602,27 +606,19 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			
 			//HUllShader
-			ID3DBlob *HSBlob = Win32CompileShaderFromFile(L"HullShader.hlsl","HSEntry","hs_5_0");
-			ASSERT(HSBlob);
-			void *CompiledHS = HSBlob->GetBufferPointer();
-			SIZE_T CompiledHSSize = HSBlob->GetBufferSize();
-			res = GlobalDevice->CreateHullShader(CompiledHS,CompiledHSSize,nullptr,&GlobalHullShader);
+			ShaderCode HSCode = Win32CompileShaderFromFile(L"HullShader.hlsl","HSEntry","hs_5_0");
+			
+			res = GlobalDevice->CreateHullShader(HSCode.Code,HSCode.Size,nullptr,&GlobalHullShader);
 			ASSERT(res==S_OK);
 			
 			//DomainShader
-			ID3DBlob *DSBlob = Win32CompileShaderFromFile(L"DomainShader.hlsl","DSEntry","ds_5_0");
-			ASSERT(DSBlob);
-			void *CompiledDS = DSBlob->GetBufferPointer();
-			SIZE_T CompiledDSSize = DSBlob->GetBufferSize();
-			res = GlobalDevice->CreateDomainShader(CompiledDS,CompiledDSSize,nullptr,&GlobalDomainShader);
+			ShaderCode DSCode = Win32CompileShaderFromFile(L"DomainShader.hlsl","DSEntry","ds_5_0");
+			res = GlobalDevice->CreateDomainShader(DSCode.Code,DSCode.Size,nullptr,&GlobalDomainShader);
 			ASSERT(res==S_OK);
 			
 			//GeometryShader
-			ID3DBlob *GSBlob = Win32CompileShaderFromFile(L"GeometryShader.hlsl","GSEntry","gs_5_0");
-			ASSERT(GSBlob);
-			void *CompiledGS = GSBlob->GetBufferPointer();
-			SIZE_T CompiledGSSize = GSBlob->GetBufferSize();
-			res = GlobalDevice->CreateGeometryShader(CompiledGS,CompiledGSSize,nullptr,&GlobalGeometryShader);
+			ShaderCode GSCode = Win32CompileShaderFromFile(L"GeometryShader.hlsl","GSEntry","gs_5_0");
+			res = GlobalDevice->CreateGeometryShader(GSCode.Code,GSCode.Size,nullptr,&GlobalGeometryShader);
 			ASSERT(res==S_OK);
 			
 			//Rasterizer
@@ -643,17 +639,6 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			ASSERT(RasterizerState);
 			
 			
-			
-		
-
-			
-			
-			
-			
-			
-			
-			
-			
 			//FrameBuffer
 			if(GlobalSwapChain->GetBuffer(0,__uuidof(ID3D11Resource),(void**)&GlobalFrameBuffer)==S_OK){
 				ASSERT(GlobalFrameBuffer);
@@ -671,29 +656,18 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			}
 			
 			//ComputeShader
-			ID3DBlob *CSBlob = Win32CompileShaderFromFile(L"ComputeShader.hlsl","CSEntry","cs_5_0");
-			ASSERT(CSBlob);
-			void *CompiledCS = CSBlob->GetBufferPointer();
-			SIZE_T CompiledCSSize = CSBlob->GetBufferSize();
-			res = GlobalDevice->CreateComputeShader(CompiledCS,CompiledCSSize,nullptr,&GlobalComputeShader);
+			ShaderCode CSCode = Win32CompileShaderFromFile(L"ComputeShader.hlsl","CSEntry","cs_5_0");
+			res = GlobalDevice->CreateComputeShader(CSCode.Code,CSCode.Size,nullptr,&GlobalComputeShader);
 			ASSERT(res==S_OK);
-			
-			
 			UpdateCSTexture(Width,Height);
-			
-			
-			
-			
-
-			
 			
 			//Initializing active shader
 			GlobalActivePixelShader 	= GlobalPixelShaderArray[1];
 			GlobalActiveVertexShader 	= GlobalVertexShader;
 			GlobalActiveVertexBuffer 	= GlobalVertexBufferArray[0];
 			GlobalActiveIndexBuffer 	= GlobalIndexBufferArray[0];
-			GlobalActiveIndexCount 		= GlobalSquare.IndexCount;
-			GlobalStrides[0] = {GlobalSquare.VertexSize};
+			GlobalActiveIndexCount 		= GlobalIndexedGeometryArray[0].IndexCount;
+			GlobalStrides[0] = {GlobalIndexedGeometryArray[0].VertexSize};
 			GlobalOffsets[0] = {};
 			
 			
@@ -701,9 +675,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			//Loop
 			while(GlobalRunning){
-				
 				MessageLoop(GlobalDevice);
-				
 				if(!GlobalRunning) break;
 				
 				ASSERT(GetClientRect(Window,&ClientRect));
@@ -715,7 +687,6 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					Height = NewHeight;
 					ResizeSwapChainBuffers(Width,Height);
 					UpdateCSTexture(Width,Height);
-					
 				}
 				
 				static unsigned int AnimationCount = 1;
@@ -729,8 +700,6 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					}
 				}
 				
-				
-				
 				D3D11_VIEWPORT ViewPort;
 				ViewPort.TopLeftX = 0.0f;
 				ViewPort.TopLeftY = 0.0f;
@@ -738,7 +707,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				ViewPort.Height = (float)Height;
 				ViewPort.MinDepth = 0.0f;
 				ViewPort.MaxDepth = 1.0f;
-				const float RGBA[4] = {0,0,0,1};
+				
 				
 				D3D11_RECT ScissorRect;
 				ScissorRect.left  	= (LONG)(ViewPort.TopLeftX + (Width * 0.25f));
@@ -746,15 +715,15 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				ScissorRect.right 	= (LONG)(ViewPort.Width * 0.75f);
 				ScissorRect.bottom  = (LONG)(ViewPort.Height * 0.75f);
 				
-				
-				//
+				const float RGBA[4] = {0,0,0,1};
 				GlobalDeviceContext->ClearRenderTargetView(GlobalRenderTargetView, RGBA);
 				
-				//Draw Full Square
+				//Draw Background Square
 				GlobalDeviceContext->RSSetViewports(1,&ViewPort);
 				GlobalDeviceContext->RSSetState(NULL);
 				GlobalDeviceContext->IASetVertexBuffers(0, 1, &GlobalActiveVertexBuffer, GlobalStrides, GlobalOffsets);
 				GlobalDeviceContext->IASetIndexBuffer(GlobalActiveIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+				GlobalDeviceContext->IASetInputLayout(VSInputLayout);
 				GlobalDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 				GlobalDeviceContext->VSSetShader(GlobalActiveVertexShader, NULL, 0);
 				GlobalDeviceContext->PSSetShader(GlobalPixelShaderArray[0], NULL, 0);
@@ -771,6 +740,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				
 				GlobalDeviceContext->IASetVertexBuffers(0,1,&GlobalActiveVertexBuffer, GlobalStrides, GlobalOffsets);
 				GlobalDeviceContext->IASetIndexBuffer(GlobalActiveIndexBuffer,DXGI_FORMAT_R32_UINT,0);
+				GlobalDeviceContext->IASetInputLayout(VSInputLayout);
 				
 				GlobalDeviceContext->VSSetShader(GlobalActiveVertexShader,NULL,0);
 				GlobalDeviceContext->PSSetShader(GlobalActivePixelShader,NULL,0);

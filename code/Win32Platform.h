@@ -2,7 +2,7 @@
 
 //Windows functions
 LRESULT Wndproc(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam);
-itnernal void Win32ProcessError(DWORD Error);
+internal void Win32ProcessError(DWORD Error);
 internal void MessageLoop(ID3D11Device* Device);
 
 //DXGI Functions
@@ -18,7 +18,7 @@ internal IDXGISwapChain1* Win32GetSwapChain(ID3D11Device *Device, HWND Window,ID
 
 
 //Shader compilation functions
-internal ID3DBlob *Win32CompileShaderFromFile(LPCWSTR Filename, LPCSTR Entrypoint, LPCSTR Target);
+internal ShaderCode Win32CompileShaderFromFile(LPCWSTR Filename, LPCSTR Entrypoint, LPCSTR Target);
 
 //Buffer functions
 internal ID3D11Buffer* Win32CreateVertexBuffer(
@@ -32,6 +32,11 @@ internal ID3D11InputLayout* Win32CreateVertexInputLayout(
 	void *CompiledVSShaderCode, 
 	size_t ShaderSize
 );
+internal void CreateVBForIndexedGeometry(
+	float *GeometryData,
+	unsigned int VertexCount, 
+	unsigned int *IndexData,
+	unsigned int IndexCount);
 
 //Shader Creation functions
 internal ID3D11VertexShader* Win32CreateVertexShader(
