@@ -15,26 +15,12 @@
 #include <d3dcompiler.h>
 #include <windows.h>
 
+#define MAX_PIPELINE_STATES 64
 
 #define internal static
 #define global_variable static
 
-struct ShaderCode{
-	void *Code;
-	size_t Size;
-};
-
-struct IndexedGeometryObject{
-	void *VertexData;
-	UINT VertexSize;
-	UINT VertexCount;
-	UINT VertexDataSize;
-	
-	UINT *IndexData;
-	UINT IndexSize;
-	UINT IndexCount;
-	UINT IndexDataSize;
-};
+#include "Structs.h"
 #include "Win32Platform.h"
 
 
@@ -43,21 +29,25 @@ struct IndexedGeometryObject{
 
 global_variable bool GlobalRunning = false;
 global_variable bool GlobalAnimationIsActive = false;
+global_variable bool GlobalTesselationActive = false;
+global_variable bool GlobalGeometryShaderActive = true;
+
+global_variable GraphicsPipelineState PipelineStateArray[MAX_PIPELINE_STATES];
+global_variable unsigned int PipelineStateCount = 0;
+global_variable GraphicsPipelineState ActivePipelineStateArray[MAX_PIPELINE_STATES];
+global_variable unsigned int ActivePipelineStateCount = 0;
+
 
 
 global_variable UINT GlobalPixelShaderInArrayCount = 0;
 global_variable UINT GlobalVertexBufferCount = 0;
 
-global_variable ID3D11Device 			*GlobalDevice 			= NULL;
-global_variable IDXGISwapChain1 		*GlobalSwapChain 		= NULL;
-global_variable ID3D11DeviceContext 	*GlobalDeviceContext 	= NULL;
-global_variable ID3D11RenderTargetView 	*GlobalRenderTargetView = NULL;
-global_variable ID3D11Texture2D			*GlobalFrameBuffer 		= NULL;
+global_variable ID3D11Device 			*GlobalDevice 			= nullptr;
+global_variable IDXGISwapChain1 		*GlobalSwapChain 		= nullptr;
+global_variable ID3D11DeviceContext 	*GlobalDeviceContext 	= nullptr;
+global_variable ID3D11RenderTargetView 	*GlobalRenderTargetView = nullptr;
+global_variable ID3D11Texture2D			*GlobalFrameBuffer 		= nullptr;
 
-global_variable ID3D11PixelShader 	*GlobalActivePixelShader;
-global_variable ID3D11VertexShader 	*GlobalActiveVertexShader;
-global_variable ID3D11Buffer 		*GlobalActiveVertexBuffer;
-global_variable ID3D11Buffer 		*GlobalActiveIndexBuffer;
 global_variable UINT GlobalActiveIndexCount;
 global_variable UINT GlobalStrides[1];
 global_variable UINT GlobalOffsets[1];
@@ -65,12 +55,13 @@ global_variable UINT GlobalOffsets[1];
 global_variable ID3D11Buffer* 			GlobalVertexBufferArray[32] = {};
 global_variable ID3D11Buffer* 			GlobalIndexBufferArray[64] 	= {};
 
-global_variable ID3D11VertexShader 		*GlobalVertexShader 		= NULL;
-global_variable ID3D11HullShader 		*GlobalHullShader 			= NULL;
-global_variable ID3D11DomainShader 		*GlobalDomainShader 		= NULL;
-global_variable ID3D11GeometryShader 	*GlobalGeometryShader 		= NULL;
+global_variable ID3D11VertexShader* 	GlobalVertexShaderArray[64];
+global_variable ID3D11HullShader* 		GlobalHullShaderArray[64];
+global_variable ID3D11DomainShader* 	GlobalDomainShaderArray[64];
+global_variable ID3D11GeometryShader* 	GlobalGeometryShaderArray[64];
 global_variable ID3D11PixelShader* 		GlobalPixelShaderArray[MAX_PIXEL_SHADER_COUNT];
 
+global_variable ID3D11PixelShader *GlobalAnimationShader = nullptr;
 
 global_variable IndexedGeometryObject GlobalIndexedGeometryArray[64];
 global_variable unsigned int IndexedGeometryCount = 0;
@@ -81,7 +72,7 @@ global_variable ID3D11Texture2D *GlobalCSShaderResource = nullptr;
 global_variable ID3D11UnorderedAccessView *GlobalUAV = nullptr;
 ID3D11Texture2D *GlobalUAVTexture = nullptr;
 
-
+global_variable GraphicsPipelineState NILGraphicsPipelineState = {};
 //Windows functions
 
 LRESULT Wndproc(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam){
@@ -121,56 +112,54 @@ internal void MessageLoop(ID3D11Device* Device){
 			case WM_KEYDOWN:{
 				unsigned int VKCode = (unsigned int) Message.wParam;
 				if(VKCode == '1'){
-					if(GlobalPixelShaderInArrayCount >= 1 ) GlobalActivePixelShader = GlobalPixelShaderArray[0];
+					if(GlobalPixelShaderInArrayCount >= 1 ) GlobalAnimationShader = GlobalPixelShaderArray[0];
 					
 				}
 				else if(VKCode == '2'){
-					if(GlobalPixelShaderInArrayCount >= 2 ) GlobalActivePixelShader = GlobalPixelShaderArray[1];
+					if(GlobalPixelShaderInArrayCount >= 2 ) GlobalAnimationShader = GlobalPixelShaderArray[1];
 				}
 				else if(VKCode == '3'){
-					if(GlobalPixelShaderInArrayCount >= 3 ) GlobalActivePixelShader = GlobalPixelShaderArray[2];
+					if(GlobalPixelShaderInArrayCount >= 3 ) GlobalAnimationShader = GlobalPixelShaderArray[2];
 				}
 				else if(VKCode == '4'){
-					if(GlobalPixelShaderInArrayCount >= 4 ) GlobalActivePixelShader = GlobalPixelShaderArray[3];
+					if(GlobalPixelShaderInArrayCount >= 4 ) GlobalAnimationShader = GlobalPixelShaderArray[3];
 				}
 				else if(VKCode == '5'){
-					if(GlobalPixelShaderInArrayCount >= 5 ) GlobalActivePixelShader = GlobalPixelShaderArray[4];
+					if(GlobalPixelShaderInArrayCount >= 5 ) GlobalAnimationShader = GlobalPixelShaderArray[4];
 				}
 				else if(VKCode == '6'){
-					if(GlobalPixelShaderInArrayCount >= 6 ) GlobalActivePixelShader = GlobalPixelShaderArray[5];
+					if(GlobalPixelShaderInArrayCount >= 6 ) GlobalAnimationShader = GlobalPixelShaderArray[5];
 				}
 				else if(VKCode == VK_SPACE){
 					GlobalAnimationIsActive ^= true;
 				}
-				else if(VKCode == 'R'){
-					ASSERT(GlobalHullShader)
-					GlobalHullShader->Release();
-					ShaderCode HSCode = Win32CompileShaderFromFile(L"HullShader.hlsl","HSEntry","hs_5_0");
+				else if(VKCode == 'T'){
+					GlobalTesselationActive ^=true;
 					
-					HRESULT res = Device->CreateHullShader(HSCode.Code,HSCode.Size,nullptr,&GlobalHullShader);
-					ASSERT(res==S_OK);
-					
-					ASSERT(GlobalDomainShader)
-					GlobalDomainShader->Release();
-					ShaderCode DSCode = Win32CompileShaderFromFile(L"DomainShader.hlsl","DSEntry","ds_5_0");
-					
-					res = Device->CreateDomainShader(DSCode.Code,DSCode.Size,nullptr,&GlobalDomainShader);
-					ASSERT(res==S_OK);
+				}
+				else if(VKCode == 'G'){
+					GlobalGeometryShaderActive ^=true;
 				}
 				
 				else if(VKCode == 'H'){
-					GlobalActiveVertexBuffer = GlobalVertexBufferArray[1];
-					GlobalActiveIndexBuffer = GlobalIndexBufferArray[1];
-					GlobalActiveIndexCount = GlobalIndexedGeometryArray[1].IndexCount;
-					GlobalStrides[0] = GlobalIndexedGeometryArray[1].VertexSize;
-					GlobalActivePixelShader = GlobalPixelShaderArray[2];
+					ClearActivePipelineState();
+					PushPipelineState(&PipelineStateArray[3]);
+					if(GlobalTesselationActive){
+						PushPipelineState(&PipelineStateArray[4]);
+					}
+					if(GlobalGeometryShaderActive){
+						PushPipelineState(&PipelineStateArray[5]);
+					}
 				}
 				else if(VKCode == 'S'){
-					GlobalActiveVertexBuffer = GlobalVertexBufferArray[0];
-					GlobalActiveIndexBuffer = GlobalIndexBufferArray[0];
-					GlobalActiveIndexCount = GlobalIndexedGeometryArray[0].IndexCount;
-					GlobalStrides[0] = GlobalIndexedGeometryArray[0].VertexSize;
-					GlobalActivePixelShader = GlobalPixelShaderArray[0];
+					ClearActivePipelineState();
+					PushPipelineState(&PipelineStateArray[0]);
+					if(GlobalTesselationActive){
+						PushPipelineState(&PipelineStateArray[1]);
+					}
+					if(GlobalGeometryShaderActive){
+						PushPipelineState(&PipelineStateArray[2]);
+					}
 				}
 				bool AltKeyWasDown = ((Message.lParam & (1 << 29)) != 0);
 				if((VKCode == VK_F4) && AltKeyWasDown){
@@ -389,8 +378,60 @@ internal ID3D11PixelShader* Win32CreatePixelShader(
 	return PixelShader;
 	
 }
+//PipelineStates
+internal UINT SetPipelineState(
+	ID3D11DeviceContext *DeviceContext,
+	GraphicsPipelineState *PipelineState,
+	D3D11_VIEWPORT *ViewportArray, 
+	UINT ViewportCount,
+	D3D11_RECT *ScissorRectArray,
+	UINT ScissorRectCount)
+{
+	//IA
+	DeviceContext->IASetVertexBuffers(0, 
+		PipelineState->VertexBufferCount, PipelineState->VertexBufferArray,
+		PipelineState->StrideArray, PipelineState->OffsetArray);
+	DeviceContext->IASetIndexBuffer(PipelineState->IndexBuffer, PipelineState->IndexBufferFormat, 0);
+	DeviceContext->IASetInputLayout(PipelineState->InputLayout);
+	DeviceContext->IASetPrimitiveTopology(PipelineState->PrimitiveTopology);
+	//VS
+	DeviceContext->VSSetShader(PipelineState->VertexShader, nullptr, 0);
+	//HS
+	DeviceContext->HSSetShader(PipelineState->HullShader,nullptr,0);
+	//DS
+	DeviceContext->DSSetShader(PipelineState->DomainShader,nullptr,0);
+	//GS1
+	DeviceContext->GSSetShader(PipelineState->GeometryShader,nullptr,0);
+	//RS
+	DeviceContext->RSSetScissorRects(ScissorRectCount,ScissorRectArray);
+	DeviceContext->RSSetState(PipelineState->RasterizerState);
+	DeviceContext->RSSetViewports(ViewportCount,ViewportArray);
+	//PS
+	DeviceContext->PSSetShader(*(PipelineState->PixelShader), nullptr, 0);
+	//OMS
+	DeviceContext->OMSetRenderTargets(PipelineState->RenderTargetViewCount, PipelineState->RenderTargetViewArray, nullptr);
+	return PipelineState->IndexCount;
+}
 
-//miscs
+
+
+internal void SetComputeShaderState(ID3D11DeviceContext *DeviceContext, ComputeShaderState &CSState){
+	DeviceContext->CSSetUnorderedAccessViews(0,CSState.UnorderedAccessViewCount,CSState.UnorderedAccessViewArray,nullptr);
+	DeviceContext->CSSetShaderResources(0,CSState.ShaderResourceViewCount,CSState.ShaderResourceViewArray);
+	DeviceContext->CSSetShader(CSState.ComputeShader,nullptr,0);
+}
+internal void ClearActivePipelineState(){
+	for(unsigned int i = 0; i < ActivePipelineStateCount; i++){
+		ActivePipelineStateArray[i] = NILGraphicsPipelineState;
+	}
+	ActivePipelineStateCount = 0;
+}
+internal void PushPipelineState(GraphicsPipelineState *State){
+	ASSERT(State);
+	ActivePipelineStateArray[ActivePipelineStateCount++]=*State;
+}
+
+//Miscs
 internal int Win32AddPixelShaderToArray(
 	ID3D11PixelShader** PixelShaderArray, 
 	ID3D11PixelShader* PixelShader)
@@ -458,7 +499,7 @@ internal void UpdateCSTexture(UINT Width, UINT Height){
 	GlobalFrameBuffer->GetDesc(&Tex2DDesc);
 	Tex2DDesc.BindFlags |= (D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS);
 	ASSERT(GlobalDevice->CreateTexture2D(&Tex2DDesc,&CSSubresourceData,&GlobalCSShaderResource)==S_OK);
-
+	
 	//Create new UAV
 	D3D11_BUFFER_UAV UAVElementDesc;
 	UAVElementDesc.FirstElement = 0;
@@ -471,8 +512,8 @@ internal void UpdateCSTexture(UINT Width, UINT Height){
 	UAVDesc.Buffer = UAVElementDesc;
 
 	ASSERT(GlobalDevice->CreateUnorderedAccessView(GlobalCSShaderResource,&UAVDesc,&GlobalUAV)==S_OK);
+	VirtualFree(CSShaderResourceData, 0, MEM_RELEASE);
 }
-
 
 
 int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow){
@@ -525,9 +566,9 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			
 			//retrieve IDXGI Interfaces
-			IDXGIDevice1 *IdxgiDevice = NULL;
-			IDXGIAdapter *IdxgiAdapter = NULL;
-			IDXGIFactory2 *IdxgiFactory = NULL;
+			IDXGIDevice1 *IdxgiDevice = nullptr;
+			IDXGIAdapter *IdxgiAdapter = nullptr;
+			IDXGIFactory2 *IdxgiFactory = nullptr;
 			
 			Win32GetIDXGIInterfacesFromD3DDevice(GlobalDevice, &IdxgiDevice, &IdxgiAdapter, &IdxgiFactory);
 
@@ -536,8 +577,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			//Vertex Shader 
 			ShaderCode VSCode = Win32CompileShaderFromFile(L"VertexShader.hlsl","VSEntry","vs_5_0");
-			GlobalVertexShader = Win32CreateVertexShader(GlobalDevice,VSCode.Code,VSCode.Size);
-			ASSERT(GlobalVertexShader);
+			GlobalVertexShaderArray[0] = Win32CreateVertexShader(GlobalDevice,VSCode.Code,VSCode.Size);
+			ASSERT(GlobalVertexShaderArray[0]);
 			
 			OutputDebugStringA("Vertex Shader created\n");
 			//Input Layout
@@ -608,17 +649,17 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			//HUllShader
 			ShaderCode HSCode = Win32CompileShaderFromFile(L"HullShader.hlsl","HSEntry","hs_5_0");
 			
-			res = GlobalDevice->CreateHullShader(HSCode.Code,HSCode.Size,nullptr,&GlobalHullShader);
+			res = GlobalDevice->CreateHullShader(HSCode.Code,HSCode.Size,nullptr,&GlobalHullShaderArray[0]);
 			ASSERT(res==S_OK);
 			
 			//DomainShader
 			ShaderCode DSCode = Win32CompileShaderFromFile(L"DomainShader.hlsl","DSEntry","ds_5_0");
-			res = GlobalDevice->CreateDomainShader(DSCode.Code,DSCode.Size,nullptr,&GlobalDomainShader);
+			res = GlobalDevice->CreateDomainShader(DSCode.Code,DSCode.Size,nullptr,&GlobalDomainShaderArray[0]);
 			ASSERT(res==S_OK);
 			
 			//GeometryShader
 			ShaderCode GSCode = Win32CompileShaderFromFile(L"GeometryShader.hlsl","GSEntry","gs_5_0");
-			res = GlobalDevice->CreateGeometryShader(GSCode.Code,GSCode.Size,nullptr,&GlobalGeometryShader);
+			res = GlobalDevice->CreateGeometryShader(GSCode.Code,GSCode.Size,nullptr,&GlobalGeometryShaderArray[0]);
 			ASSERT(res==S_OK);
 			
 			//Rasterizer
@@ -634,7 +675,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			RasterizerDesc.MultisampleEnable = FALSE;
 			RasterizerDesc.AntialiasedLineEnable = FALSE;
 			
-			ID3D11RasterizerState *RasterizerState = NULL;
+			ID3D11RasterizerState *RasterizerState = nullptr;
 			res = GlobalDevice->CreateRasterizerState(&RasterizerDesc,&RasterizerState);
 			ASSERT(RasterizerState);
 			
@@ -645,15 +686,168 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				//RenderTargetView
 				if(GlobalDevice->CreateRenderTargetView(GlobalFrameBuffer,NULL,&GlobalRenderTargetView)==S_OK){
 					ASSERT(GlobalRenderTargetView);
-					OutputDebugStringA("Resize Success\n");
+					OutputDebugStringA("RTV Success\n");
 				}
 				else{
-					OutputDebugStringA("Resize RTV failed\n");
+					OutputDebugStringA(" RTV failed\n");
 				}
 				}
 			else{
-				OutputDebugStringA("Resize Buffer failed\n");
+				OutputDebugStringA("SwapChain no Buffer\n");
 			}
+			
+			{
+				//Background Square
+				GraphicsPipelineState NewPipelineState = {};
+				NewPipelineState.VertexBufferArray = &GlobalVertexBufferArray[0];
+				NewPipelineState.VertexBufferCount = 1;
+				{
+					UINT StrideArray[1] = {GlobalIndexedGeometryArray[0].VertexSize};
+					UINT OffsetArray[1] = {};
+					NewPipelineState.StrideArray = StrideArray;
+					NewPipelineState.OffsetArray = OffsetArray;
+				}
+				NewPipelineState.IndexBuffer = GlobalIndexBufferArray[0];
+				NewPipelineState.IndexBufferFormat = DXGI_FORMAT_R32_UINT;
+				NewPipelineState.IndexCount = ArrayCount(SquareIndices);
+				NewPipelineState.InputLayout = VSInputLayout;
+				NewPipelineState.PrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+				NewPipelineState.VertexShader = GlobalVertexShaderArray[0];
+				NewPipelineState.PixelShader = &GlobalPixelShaderArray[0];
+				NewPipelineState.RenderTargetViewArray = &GlobalRenderTargetView;
+				NewPipelineState.RenderTargetViewCount = 1;
+				PipelineStateArray[PipelineStateCount] = NewPipelineState;
+				PipelineStateCount++;
+			}
+			{
+				//Lines Square GS
+				GraphicsPipelineState NewPipelineState = {};
+				NewPipelineState.VertexBufferArray = &GlobalVertexBufferArray[0];
+				NewPipelineState.VertexBufferCount = 1;
+				{
+					UINT StrideArray[1] = {GlobalIndexedGeometryArray[0].VertexSize};
+					UINT OffsetArray[1] = {};
+					NewPipelineState.StrideArray = StrideArray;
+					NewPipelineState.OffsetArray = OffsetArray;
+				}
+				NewPipelineState.IndexBuffer = GlobalIndexBufferArray[0];
+				NewPipelineState.IndexBufferFormat = DXGI_FORMAT_R32_UINT;
+				NewPipelineState.IndexCount = ArrayCount(SquareIndices);
+				NewPipelineState.InputLayout = VSInputLayout;
+				NewPipelineState.PrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+				NewPipelineState.VertexShader = GlobalVertexShaderArray[0];
+				NewPipelineState.GeometryShader = GlobalGeometryShaderArray[0];
+				NewPipelineState.RasterizerState = RasterizerState;
+				NewPipelineState.PixelShader = &GlobalAnimationShader;
+				NewPipelineState.RenderTargetViewArray = &GlobalRenderTargetView;
+				NewPipelineState.RenderTargetViewCount = 1;
+				PipelineStateArray[PipelineStateCount] = NewPipelineState;
+				PipelineStateCount++;
+			}
+			{
+				//Lines Square Tesselation
+				GraphicsPipelineState NewPipelineState = {};
+				NewPipelineState.VertexBufferArray = &GlobalVertexBufferArray[0];
+				NewPipelineState.VertexBufferCount = 1;
+				{
+					UINT StrideArray[1] = {GlobalIndexedGeometryArray[0].VertexSize};
+					UINT OffsetArray[1] = {};
+					NewPipelineState.StrideArray = StrideArray;
+					NewPipelineState.OffsetArray = OffsetArray;
+				}
+				NewPipelineState.IndexBuffer = GlobalIndexBufferArray[0];
+				NewPipelineState.IndexBufferFormat = DXGI_FORMAT_R32_UINT;
+				NewPipelineState.IndexCount = ArrayCount(SquareIndices);
+				NewPipelineState.InputLayout = VSInputLayout;
+				NewPipelineState.PrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
+				NewPipelineState.VertexShader = GlobalVertexShaderArray[0];
+				NewPipelineState.HullShader = GlobalHullShaderArray[0];
+				NewPipelineState.DomainShader = GlobalDomainShaderArray[0];
+				NewPipelineState.RasterizerState = RasterizerState;
+				NewPipelineState.PixelShader = &GlobalAnimationShader;
+				NewPipelineState.RenderTargetViewArray = &GlobalRenderTargetView;
+				NewPipelineState.RenderTargetViewCount = 1;
+				PipelineStateArray[PipelineStateCount] = NewPipelineState;
+				PipelineStateCount++;
+			}
+			
+			
+			
+			{
+				//Background Hexagon
+				GraphicsPipelineState NewPipelineState = {};
+				NewPipelineState.VertexBufferArray = &GlobalVertexBufferArray[1];
+				NewPipelineState.VertexBufferCount = 1;
+				{
+					UINT StrideArray[1] = {GlobalIndexedGeometryArray[1].VertexSize};
+					UINT OffsetArray[1] = {};
+					NewPipelineState.StrideArray = StrideArray;
+					NewPipelineState.OffsetArray = OffsetArray;
+				}
+				NewPipelineState.IndexBuffer = GlobalIndexBufferArray[1];
+				NewPipelineState.IndexBufferFormat = DXGI_FORMAT_R32_UINT;
+				NewPipelineState.IndexCount = ArrayCount(HexagonIndices);
+				NewPipelineState.InputLayout = VSInputLayout;
+				NewPipelineState.PrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+				NewPipelineState.VertexShader = GlobalVertexShaderArray[0];
+				NewPipelineState.PixelShader = &GlobalPixelShaderArray[2];
+				NewPipelineState.RenderTargetViewArray = &GlobalRenderTargetView;
+				NewPipelineState.RenderTargetViewCount = 1;
+				PipelineStateArray[PipelineStateCount] = NewPipelineState;
+				PipelineStateCount++;
+			}
+			{
+				//Lines Hexagon GS
+				GraphicsPipelineState NewPipelineState = {};
+				NewPipelineState.VertexBufferArray = &GlobalVertexBufferArray[1];
+				NewPipelineState.VertexBufferCount = 1;
+				{
+					UINT StrideArray[1] = {GlobalIndexedGeometryArray[1].VertexSize};
+					UINT OffsetArray[1] = {};
+					NewPipelineState.StrideArray = StrideArray;
+					NewPipelineState.OffsetArray = OffsetArray;
+				}
+				NewPipelineState.IndexBuffer = GlobalIndexBufferArray[1];
+				NewPipelineState.IndexBufferFormat = DXGI_FORMAT_R32_UINT;
+				NewPipelineState.IndexCount = ArrayCount(HexagonIndices);
+				NewPipelineState.InputLayout = VSInputLayout;
+				NewPipelineState.PrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+				NewPipelineState.VertexShader = GlobalVertexShaderArray[0];
+				NewPipelineState.GeometryShader = GlobalGeometryShaderArray[0];
+				NewPipelineState.RasterizerState = RasterizerState;
+				NewPipelineState.PixelShader = &GlobalAnimationShader;
+				NewPipelineState.RenderTargetViewArray = &GlobalRenderTargetView;
+				NewPipelineState.RenderTargetViewCount = 1;
+				PipelineStateArray[PipelineStateCount] = NewPipelineState;
+				PipelineStateCount++;
+			}
+			{
+				//Lines Hexagon Tesselation
+				GraphicsPipelineState NewPipelineState = {};
+				NewPipelineState.VertexBufferArray = &GlobalVertexBufferArray[1];
+				NewPipelineState.VertexBufferCount = 1;
+				{
+					UINT StrideArray[1] = {GlobalIndexedGeometryArray[1].VertexSize};
+					UINT OffsetArray[1] = {};
+					NewPipelineState.StrideArray = StrideArray;
+					NewPipelineState.OffsetArray = OffsetArray;
+				}
+				NewPipelineState.IndexBuffer = GlobalIndexBufferArray[1];
+				NewPipelineState.IndexBufferFormat = DXGI_FORMAT_R32_UINT;
+				NewPipelineState.IndexCount = ArrayCount(HexagonIndices);
+				NewPipelineState.InputLayout = VSInputLayout;
+				NewPipelineState.PrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
+				NewPipelineState.VertexShader = GlobalVertexShaderArray[0];
+				NewPipelineState.HullShader = GlobalHullShaderArray[0];
+				NewPipelineState.DomainShader = GlobalDomainShaderArray[0];
+				NewPipelineState.RasterizerState = RasterizerState;
+				NewPipelineState.PixelShader = &GlobalAnimationShader;
+				NewPipelineState.RenderTargetViewArray = &GlobalRenderTargetView;
+				NewPipelineState.RenderTargetViewCount = 1;
+				PipelineStateArray[PipelineStateCount] = NewPipelineState;
+				PipelineStateCount++;
+			}
+			
 			
 			//ComputeShader
 			ShaderCode CSCode = Win32CompileShaderFromFile(L"ComputeShader.hlsl","CSEntry","cs_5_0");
@@ -661,18 +855,23 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			ASSERT(res==S_OK);
 			UpdateCSTexture(Width,Height);
 			
-			//Initializing active shader
-			GlobalActivePixelShader 	= GlobalPixelShaderArray[1];
-			GlobalActiveVertexShader 	= GlobalVertexShader;
-			GlobalActiveVertexBuffer 	= GlobalVertexBufferArray[0];
-			GlobalActiveIndexBuffer 	= GlobalIndexBufferArray[0];
-			GlobalActiveIndexCount 		= GlobalIndexedGeometryArray[0].IndexCount;
-			GlobalStrides[0] = {GlobalIndexedGeometryArray[0].VertexSize};
-			GlobalOffsets[0] = {};
+			ComputeShaderState CSState = {};
+			CSState.ShaderResourceViewArray = &GlobalCSShaderResourceView;
+			CSState.ShaderResourceViewCount = 1;
+			CSState.UnorderedAccessViewArray = &GlobalUAV;
+			CSState.UnorderedAccessViewCount = 1;
+			CSState.ComputeShader = GlobalComputeShader;
 			
+			GlobalAnimationShader = GlobalPixelShaderArray[1];
+			PushPipelineState(&PipelineStateArray[0]);
+			if(GlobalTesselationActive){
+				PushPipelineState(&PipelineStateArray[2]);
+			}
+			if(GlobalGeometryShaderActive){
+				PushPipelineState(&PipelineStateArray[1]);
+			}
 			
 			GlobalRunning =  true;
-			
 			//Loop
 			while(GlobalRunning){
 				MessageLoop(GlobalDevice);
@@ -696,7 +895,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					AnimationCount = (AnimationCount+1)%(60);
 					if(AnimationCount == 0){
 						AnimationIndex = (AnimationIndex+1)%GlobalPixelShaderInArrayCount;
-						GlobalActivePixelShader = GlobalPixelShaderArray[AnimationIndex];
+						GlobalAnimationShader = GlobalPixelShaderArray[AnimationIndex];
 					}
 				}
 				
@@ -717,60 +916,20 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				
 				const float RGBA[4] = {0,0,0,1};
 				GlobalDeviceContext->ClearRenderTargetView(GlobalRenderTargetView, RGBA);
-				
-				//Draw Background Square
-				GlobalDeviceContext->RSSetViewports(1,&ViewPort);
-				GlobalDeviceContext->RSSetState(NULL);
-				GlobalDeviceContext->IASetVertexBuffers(0, 1, &GlobalActiveVertexBuffer, GlobalStrides, GlobalOffsets);
-				GlobalDeviceContext->IASetIndexBuffer(GlobalActiveIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
-				GlobalDeviceContext->IASetInputLayout(VSInputLayout);
-				GlobalDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-				GlobalDeviceContext->VSSetShader(GlobalActiveVertexShader, NULL, 0);
-				GlobalDeviceContext->PSSetShader(GlobalPixelShaderArray[0], NULL, 0);
-				GlobalDeviceContext->GSSetShader(nullptr,nullptr,0);
-				GlobalDeviceContext->OMSetRenderTargets(1, &GlobalRenderTargetView, NULL);
-				
-				GlobalDeviceContext->DrawIndexed(GlobalActiveIndexCount, 0, 0);
 
-				
-				//Draw Geometry Lines
-				GlobalDeviceContext->RSSetViewports(1,&ViewPort);
-				GlobalDeviceContext->RSSetScissorRects(1,&ScissorRect);
-				GlobalDeviceContext->RSSetState(RasterizerState);
-				
-				GlobalDeviceContext->IASetVertexBuffers(0,1,&GlobalActiveVertexBuffer, GlobalStrides, GlobalOffsets);
-				GlobalDeviceContext->IASetIndexBuffer(GlobalActiveIndexBuffer,DXGI_FORMAT_R32_UINT,0);
-				GlobalDeviceContext->IASetInputLayout(VSInputLayout);
-				
-				GlobalDeviceContext->VSSetShader(GlobalActiveVertexShader,NULL,0);
-				GlobalDeviceContext->PSSetShader(GlobalActivePixelShader,NULL,0);
-				GlobalDeviceContext->OMSetRenderTargets(1,&GlobalRenderTargetView,NULL);
-#if 0		
-				GlobalDeviceContext->HSSetShader(GlobalHullShader,nullptr,0);
-				GlobalDeviceContext->DSSetShader(GlobalDomainShader,nullptr,0);
-				GlobalDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
-				
-#else
-				GlobalDeviceContext->GSSetShader(GlobalGeometryShader,nullptr,0);
-				GlobalDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-				
-#endif	
-				GlobalDeviceContext->DrawIndexed(GlobalActiveIndexCount, 0, 0);
-
+				for(unsigned int i = 0; i< ActivePipelineStateCount;i++){
+					UINT DrawIndexCount = SetPipelineState(GlobalDeviceContext,&ActivePipelineStateArray[i],&ViewPort,1,&ScissorRect,1);
+					ASSERT(DrawIndexCount);
+					GlobalDeviceContext->DrawIndexed(DrawIndexCount,0,0);
+				}
 
 				GlobalDeviceContext->CopyResource(GlobalCSShaderResource, GlobalFrameBuffer);
-				GlobalDeviceContext->CSSetUnorderedAccessViews(0,1,&GlobalUAV,nullptr);
-				GlobalDeviceContext->CSSetShader(GlobalComputeShader,nullptr,0);
+				SetComputeShaderState(GlobalDeviceContext,CSState);
 				GlobalDeviceContext->Dispatch(Width,Height,1);
-				
 				GlobalDeviceContext->CopyResource(GlobalFrameBuffer,GlobalCSShaderResource);
+				
+				
 				GlobalSwapChain->Present(1, 0);
-				
-			
-				
-			
-				
-				
 			}
 		}
 		else{

@@ -49,6 +49,19 @@ internal ID3D11PixelShader* Win32CreatePixelShader(
 	LPCSTR Entrypoint, 
 	LPCSTR Target);
 	
+//PipelineStates
+
+internal void SetComputeShaderState(ID3D11DeviceContext *DeviceContext, ComputeShaderState &CSState);
+internal void ClearActivePipelineState();
+internal void PushPipelineState(GraphicsPipelineState *State);
+internal UINT SetPipelineState(
+	ID3D11DeviceContext *Device,
+	GraphicsPipelineState *PipelineState,
+	D3D11_VIEWPORT *ViewportArray, 
+	UINT ViewportCount,
+	D3D11_RECT *ScissorRectArray,
+	UINT ScissorRectCount);
+
 //miscs
 internal int Win32AddPixelShaderToArray(
 	ID3D11PixelShader** PixelShaderArray, 
@@ -57,3 +70,5 @@ internal int Win32AddPixelShaderToArray(
 internal void ResizeSwapChainBuffers(UINT NewWidth, UINT NewHeight);
 
 internal void UpdateCSTexture(UINT Width, UINT Height);
+
+
