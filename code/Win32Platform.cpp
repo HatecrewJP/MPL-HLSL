@@ -913,7 +913,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					VSInputLayoutArray[0],
 					D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST,
 					GlobalVertexShaderArray[0],
-					nullptr,1,
+					nullptr,0,
 					GlobalHullShaderArray[0],
 					GlobalDomainShaderArray[0],
 					nullptr,
