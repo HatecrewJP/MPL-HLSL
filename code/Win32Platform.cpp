@@ -920,7 +920,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					RasterizerState,
 					&GlobalAnimationShader,
 					&GlobalRenderTargetView, 1,
-					"HexagoTesselation"));
+					"HexagonTesselation"));
 			
 			float ConstantBufferData[4] = {};
 			//Buffer for Angle
@@ -956,6 +956,22 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					&GlobalAnimationShader,
 					&GlobalRenderTargetView, 1,
 					"Cube"));
+			AddPipelineStateToArray(BuildPipelineState(
+					&GlobalVertexBufferArray[2],1,
+					(UINT*)&GlobalIndexedGeometryArray[2].VertexSize,
+					(UINT*)&Zero,
+					GlobalIndexBufferArray[2],DXGI_FORMAT_R32_UINT,ArrayCount(CubeIndices),
+					VSInputLayoutArray[1],
+					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+					GlobalVertexShaderArray[1],
+					&AngleConstantBuffer,1,
+					nullptr,
+					nullptr,
+					GlobalGeometryShaderArray[0],
+					RasterizerState2,
+					&GlobalAnimationShader,
+					&GlobalRenderTargetView, 1,
+					"CubeGeometryShaderEnabled"));
 			
 			
 			
@@ -977,13 +993,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			CSState.ComputeShader = GlobalComputeShader;
 			
 			GlobalAnimationShader = GlobalPixelShaderArray[1];
-			PushPipelineState(&PipelineStateArray[0]);
-			if(GlobalTesselationActive){
-				PushPipelineState(&PipelineStateArray[2]);
-			}
-			if(GlobalGeometryShaderActive){
-				PushPipelineState(&PipelineStateArray[1]);
-			}
+			PushPipelineState(&PipelineStateArray[7]);
 			
 
 			static int AnimationIndex = 0;
@@ -1004,11 +1014,6 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					ResizeSwapChainBuffers(Width,Height);
 					UpdateCSTexture(Width,Height);
 				}
-				
-				
-				
-
-				
 				
 				D3D11_VIEWPORT ViewPort;
 				ViewPort.TopLeftX = 0.0f;

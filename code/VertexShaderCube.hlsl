@@ -67,12 +67,11 @@ vs_output VSEntry(const vs_input input)
 	
 	
 	Input *= Scaling;
-	Input = RotationYaw(Input,0);
+	Input = RotationYaw(Input,RotationAngle);
 	Input = RotationPitch(Input,RotationAngle);
-	Input = RotationRoll(Input,45);
-	
+	Input = RotationRoll(Input,0);
+	Input.x /= (Width/Height);
 	output.vPosition = mul(Input,OrthographicProjectionMatrix);
-	Input.x /= Width/Height;
 	return output;
 }
 
