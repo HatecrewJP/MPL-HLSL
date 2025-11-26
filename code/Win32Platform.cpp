@@ -14,7 +14,7 @@
 #include <dxgi1_2.h>
 #include <d3dcompiler.h>
 #include <windows.h>
-
+#include <math.h>
 #define MAX_PIPELINE_STATES 64
 
 #define internal static
@@ -401,6 +401,7 @@ internal UINT SetPipelineState(
 	DeviceContext->IASetPrimitiveTopology(PipelineState->PrimitiveTopology);
 	//VS
 	DeviceContext->VSSetShader(PipelineState->VertexShader, nullptr, 0);
+	DeviceContext->VSSetConstantBuffers(0,PipelineState->VertexShaderConstantBufferCount,PipelineState->VertexShaderConstantBufferArray);
 	//HS
 	DeviceContext->HSSetShader(PipelineState->HullShader,nullptr,0);
 	//DS
@@ -429,6 +430,8 @@ internal GraphicsPipelineState BuildPipelineState(
 	ID3D11InputLayout *InputLayout,
 	D3D11_PRIMITIVE_TOPOLOGY PrimitiveTopology,
 	ID3D11VertexShader *VertexShader,
+	ID3D11Buffer* *VertexShaderConstantBufferArray,
+	UINT VertexShaderConstantBufferCount,
 	ID3D11HullShader *HullShader,
 	ID3D11DomainShader *DomainShader,
 	ID3D11GeometryShader *GeometryShader,
@@ -450,6 +453,8 @@ internal GraphicsPipelineState BuildPipelineState(
 	NewPipelineState.InputLayout = InputLayout;
 	NewPipelineState.PrimitiveTopology = PrimitiveTopology;
 	NewPipelineState.VertexShader = VertexShader;
+	NewPipelineState.VertexShaderConstantBufferArray = VertexShaderConstantBufferArray;
+	NewPipelineState.VertexShaderConstantBufferCount = VertexShaderConstantBufferCount;
 	NewPipelineState.HullShader = HullShader;
 	NewPipelineState.DomainShader = DomainShader;
 	NewPipelineState.GeometryShader = GeometryShader;
@@ -822,6 +827,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					VSInputLayoutArray[0],
 					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 					GlobalVertexShaderArray[0],
+					nullptr,0,
 					nullptr,
 					nullptr,
 					nullptr,
@@ -838,6 +844,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					VSInputLayoutArray[0],
 					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 					GlobalVertexShaderArray[0],
+					nullptr,0,
 					nullptr,
 					nullptr,
 					GlobalGeometryShaderArray[0],
@@ -854,6 +861,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					VSInputLayoutArray[0],
 					D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST,
 					GlobalVertexShaderArray[0],
+					nullptr,0,
 					GlobalHullShaderArray[0],
 					GlobalDomainShaderArray[0],
 					nullptr,
@@ -871,6 +879,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					VSInputLayoutArray[0],
 					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 					GlobalVertexShaderArray[0],
+					nullptr,0,
 					nullptr,
 					nullptr,
 					nullptr,
@@ -887,6 +896,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					VSInputLayoutArray[0],
 					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 					GlobalVertexShaderArray[0],
+					nullptr,0,
 					nullptr,
 					nullptr,
 					GlobalGeometryShaderArray[0],
@@ -903,6 +913,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					VSInputLayoutArray[0],
 					D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST,
 					GlobalVertexShaderArray[0],
+					nullptr,1,
 					GlobalHullShaderArray[0],
 					GlobalDomainShaderArray[0],
 					nullptr,
@@ -910,25 +921,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					&GlobalAnimationShader,
 					&GlobalRenderTargetView, 1,
 					"HexagoTesselation"));
-
-			AddPipelineStateToArray(BuildPipelineState(
-					&GlobalVertexBufferArray[2],1,
-					(UINT*)&GlobalIndexedGeometryArray[2].VertexSize,
-					(UINT*)&Zero,
-					GlobalIndexBufferArray[2],DXGI_FORMAT_R32_UINT,ArrayCount(CubeIndices),
-					VSInputLayoutArray[1],
-					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
-					GlobalVertexShaderArray[1],
-					nullptr,
-					nullptr,
-					nullptr,
-					RasterizerState2,
-					&GlobalAnimationShader,
-					&GlobalRenderTargetView, 1,
-					"Cube"));
 			
-			
-			float AngleData[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+			float ConstantBufferData[4] = {};
 			//Buffer for Angle
 			D3D11_BUFFER_DESC AngleConstantBufferDesc;
 			AngleConstantBufferDesc.ByteWidth = 16;
@@ -939,14 +933,31 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			AngleConstantBufferDesc.StructureByteStride = 0;
 			
 			D3D11_SUBRESOURCE_DATA AngleConstantBufferSubresourceData;
-			AngleConstantBufferSubresourceData.pSysMem = AngleData;
+			AngleConstantBufferSubresourceData.pSysMem = ConstantBufferData;
 			AngleConstantBufferSubresourceData.SysMemPitch = 0;
 			AngleConstantBufferSubresourceData.SysMemSlicePitch = 0;
 			ID3D11Buffer *AngleConstantBuffer = nullptr;
 			GlobalDevice->CreateBuffer(&AngleConstantBufferDesc,&AngleConstantBufferSubresourceData,&AngleConstantBuffer);
 			ASSERT(AngleConstantBuffer);
 			
-			//SRV
+			AddPipelineStateToArray(BuildPipelineState(
+					&GlobalVertexBufferArray[2],1,
+					(UINT*)&GlobalIndexedGeometryArray[2].VertexSize,
+					(UINT*)&Zero,
+					GlobalIndexBufferArray[2],DXGI_FORMAT_R32_UINT,ArrayCount(CubeIndices),
+					VSInputLayoutArray[1],
+					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+					GlobalVertexShaderArray[1],
+					&AngleConstantBuffer,1,
+					nullptr,
+					nullptr,
+					nullptr,
+					RasterizerState2,
+					&GlobalAnimationShader,
+					&GlobalRenderTargetView, 1,
+					"Cube"));
+			
+			
 			
 			
 			
@@ -973,8 +984,10 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			if(GlobalGeometryShaderActive){
 				PushPipelineState(&PipelineStateArray[1]);
 			}
-			GlobalDeviceContext->VSSetConstantBuffers(0,1,&AngleConstantBuffer);
+			
 
+			static int AnimationIndex = 0;
+			static unsigned int AnimationCount = 1;
 			GlobalRunning = true;
 			//Loop
 			while(GlobalRunning){
@@ -992,19 +1005,10 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					UpdateCSTexture(Width,Height);
 				}
 				
-				static unsigned int AnimationCount = 1;
-				global_variable float RotationAngle = 0;
+				
+				
 
-				static int AnimationIndex = 0;
-				if(GlobalAnimationIsActive){
-					AnimationCount = (AnimationCount+1)%(60);
-					if(AnimationCount == 0){
-						AnimationIndex = (AnimationIndex+1)%GlobalPixelShaderInArrayCount;
-						GlobalAnimationShader = GlobalPixelShaderArray[AnimationIndex];
-					}
-					
-					RotationAngle+=0.5f;
-				}
+				
 				
 				D3D11_VIEWPORT ViewPort;
 				ViewPort.TopLeftX = 0.0f;
@@ -1015,7 +1019,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				ViewPort.MaxDepth = 1.0f;
 				
 				
-				D3D11_RECT ScissorRect;
+				D3D11_RECT ScissorRect;		
+
 				ScissorRect.left  	= (LONG)(ViewPort.TopLeftX + (Width * 0.25f));
 				ScissorRect.top   	= (LONG)(ViewPort.TopLeftY + (Height * 0.25f));
 				ScissorRect.right 	= (LONG)(ViewPort.Width * 0.75f);
@@ -1023,6 +1028,15 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				
 				const float RGBA[4] = {0,0,0,1};
 				GlobalDeviceContext->ClearRenderTargetView(GlobalRenderTargetView, RGBA);
+				
+				ConstantBufferData[1]=(float)Width;
+				ConstantBufferData[2]=(float)Height;
+				
+				D3D11_MAPPED_SUBRESOURCE AngleSubresource = {};
+					GlobalDeviceContext->Map(AngleConstantBuffer,0,D3D11_MAP_WRITE_DISCARD,NULL,&AngleSubresource);
+					memcpy(AngleSubresource.pData,ConstantBufferData,4*sizeof(float));
+					
+					GlobalDeviceContext->Unmap(AngleConstantBuffer,0);
 				
 				
 				for(unsigned int i = 0; i< ActivePipelineStateCount;i++){
@@ -1038,6 +1052,18 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				
 				
 				GlobalSwapChain->Present(1, 0);
+
+
+
+				if (GlobalAnimationIsActive) {
+					AnimationCount = (AnimationCount + 1) % (60);
+					if (AnimationCount == 0) {
+						AnimationIndex = (AnimationIndex + 1) % GlobalPixelShaderInArrayCount;
+						GlobalAnimationShader = GlobalPixelShaderArray[AnimationIndex];
+					}
+					ConstantBufferData[0] = (float)fmod((ConstantBufferData[0]+ 0.5f),360.0f);
+					
+				}
 			}
 		}
 		else{

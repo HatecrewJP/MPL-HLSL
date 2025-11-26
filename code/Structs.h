@@ -17,6 +17,8 @@ struct GraphicsPipelineState{
 	D3D11_PRIMITIVE_TOPOLOGY PrimitiveTopology;
 	//VS
 	ID3D11VertexShader *VertexShader;
+	ID3D11Buffer* *VertexShaderConstantBufferArray;
+	UINT VertexShaderConstantBufferCount;
 	//HS
 	ID3D11HullShader *HullShader;
 	//DS

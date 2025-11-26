@@ -10,10 +10,10 @@ struct vs_output
 };
 
 
-vs_output VSEntry(const vs_input input,uniform float3 offset)
+vs_output VSEntry(const vs_input input)
 {
 	vs_output output;
-	float3 VertexOffest = offset;
+	float3 VertexOffest = float3(0,0,0);
 	output.vPosition = float4(input.vPosition - VertexOffest,1);
 	output.vPosition.xyz = output.vPosition.xyz / 1.5;
 	

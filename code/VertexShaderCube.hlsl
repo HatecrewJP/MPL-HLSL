@@ -4,6 +4,8 @@
 
 cbuffer CBufferAngle{
 	float RotationAngle;
+	float Width;
+	float Height;
 };
 struct vs_input
 {
@@ -51,21 +53,26 @@ vs_output VSEntry(const vs_input input)
 {
 	vs_output output;
 	
+	
 	float4 Input =  float4(input.vPosition,1);
+	
+
 	float4x4 OrthographicProjectionMatrix = {
 		1.0f,0.0f,0.0f,0.0f,
 		0.0f,1.0f,0.0f,0.0f,
 		0.0f,0.0f,-1.0f,0.0f,
 		0.0f,0.0f,0.0f,1.0f};
+	
 	float4 Scaling = {0.5f,0.5f,0.5f,1};
-	float4 Offset = {0.3,0.2,0,0};
+	
+	
 	Input *= Scaling;
 	Input = RotationYaw(Input,0);
 	Input = RotationPitch(Input,RotationAngle);
 	Input = RotationRoll(Input,45);
-	//Input += Offset;
-	output.vPosition = mul(Input,OrthographicProjectionMatrix);
 	
+	output.vPosition = mul(Input,OrthographicProjectionMatrix);
+	Input.x /= Width/Height;
 	return output;
 }
 
