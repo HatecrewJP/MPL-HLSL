@@ -14,11 +14,13 @@ cbuffer CBuffer{
 struct vs_input
 {
 	float3 vPosition : SV_Position;
+	float4 Color : COLOR;
 };
 
 struct vs_output
 {
 	float4 vPosition :SV_Position;
+	float4 Color : COLOR;
 };
 
 float4 RotationYaw(float4 Vec4,float Angle){
@@ -72,10 +74,11 @@ vs_output VSEntry(const vs_input input)
 	
 	Input *= Scaling;
 	Input = RotationYaw(Input,RotationAngle);
-	Input = RotationPitch(Input,0);
+	Input = RotationPitch(Input,RotationAngle);
 	Input = RotationRoll(Input,0);
 	Input.x /= (Width/Height);
 	output.vPosition = mul(Input,OrthographicProjectionMatrix);
+	output.Color =  input.Color;
 	return output;
 }
 

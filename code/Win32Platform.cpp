@@ -262,7 +262,7 @@ internal ID3D11InputLayout* Win32CreateVertexInputLayout(
 	void *CompiledVSShaderCode, 
 	size_t ShaderSize)
 {
-	D3D11_INPUT_ELEMENT_DESC VSInputElementDescArray[1];
+	D3D11_INPUT_ELEMENT_DESC VSInputElementDescArray[2];
 	VSInputElementDescArray[0].SemanticName = "SV_POSITION";
 	VSInputElementDescArray[0].SemanticIndex = 0;
 	VSInputElementDescArray[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -271,8 +271,16 @@ internal ID3D11InputLayout* Win32CreateVertexInputLayout(
 	VSInputElementDescArray[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	VSInputElementDescArray[0].InstanceDataStepRate = 0;
 	
+	VSInputElementDescArray[1].SemanticName = "COLOR";
+	VSInputElementDescArray[1].SemanticIndex = 0;
+	VSInputElementDescArray[1].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	VSInputElementDescArray[1].InputSlot = 0;
+	VSInputElementDescArray[1].AlignedByteOffset = 3*sizeof(float);
+	VSInputElementDescArray[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	VSInputElementDescArray[1].InstanceDataStepRate = 0;
+	
 	ID3D11InputLayout *VSInputLayout = NULL;
-	ASSERT(Device->CreateInputLayout(VSInputElementDescArray,1,CompiledVSShaderCode,ShaderSize,&VSInputLayout)==S_OK);
+	ASSERT(Device->CreateInputLayout(VSInputElementDescArray,2,CompiledVSShaderCode,ShaderSize,&VSInputLayout)==S_OK);
 	return VSInputLayout;
 	
 }
@@ -686,7 +694,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			//Rasterizer
 			D3D11_RASTERIZER_DESC RasterizerDesc;
 			RasterizerDesc.FillMode = D3D11_FILL_SOLID;
-			RasterizerDesc.CullMode = D3D11_CULL_NONE;
+			RasterizerDesc.CullMode = D3D11_CULL_BACK;
 			RasterizerDesc.FrontCounterClockwise = FALSE;
 			RasterizerDesc.DepthBias = 0;
 			RasterizerDesc.DepthBiasClamp = 1.0f;
@@ -696,9 +704,9 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			RasterizerDesc.MultisampleEnable = FALSE;
 			RasterizerDesc.AntialiasedLineEnable = FALSE;
 			
-			ID3D11RasterizerState *RasterizerState = nullptr;
-			res = GlobalDevice->CreateRasterizerState(&RasterizerDesc,&RasterizerState);
-			ASSERT(RasterizerState);
+			ID3D11RasterizerState *RasterizerState1 = nullptr;
+			res = GlobalDevice->CreateRasterizerState(&RasterizerDesc,&RasterizerState1);
+			ASSERT(RasterizerState1);
 
 			D3D11_RASTERIZER_DESC RasterizerDesc2;
 			RasterizerDesc2.FillMode = D3D11_FILL_WIREFRAME;

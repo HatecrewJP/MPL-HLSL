@@ -3,6 +3,7 @@
 struct HsInput
 {
 	float4 Position : SV_Position;
+	float4 Color : COLOR;
 
 };
 
@@ -14,6 +15,7 @@ struct ConstantOutputType{
 
 struct HsOutput{
 	float4 Position : SV_Position;
+	float4 Color : COLOR;
 };
 
 
@@ -38,7 +40,7 @@ ConstantOutputType PatchConstantFunction(InputPatch<HsInput,3> inputPatch, uint 
 
 HsOutput HSEntry(InputPatch<HsInput,3>patch, uint PointID : SV_OutputControlPointID, uint PatchID : SV_PrimitiveID){
 	HsOutput Output;
-	
+	Output.Color = patch[PointID].Color;
 	Output.Position = patch[PointID].Position;
 	
 	return Output;
