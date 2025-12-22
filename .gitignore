@@ -1,1 +1,8 @@
 shell.bat
+*.aux
+*.out
+*.fdb_latexmk
+*.fls
+*.log
+*.synctex.gz
+*.pdf
