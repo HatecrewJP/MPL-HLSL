@@ -2,16 +2,11 @@
 #define PI 3.14159265359
 #define DegreeToRad(x) ((x)*PI/180)
 
-cbuffer CBuffer{
-	float RotationAngle;
-	float Width;
-	float Height;
-	float ColorR;
-	float ColorG;
-	float ColorB;
-	float ColorA;
+
+float RotationAngle : register(b0[0]);
+float Width : register(b0[1]);
+float Height: register(b0[2]);
 	
-};
 struct vs_input
 {
 	float3 vPosition : SV_Position;
@@ -60,8 +55,7 @@ float4 RotationRoll(float4 Vec4,float Angle){
 vs_output VSEntry(const vs_input input)
 {
 	vs_output output;
-	
-	
+
 	float4 Input =  float4(input.vPosition,1);
 	
 

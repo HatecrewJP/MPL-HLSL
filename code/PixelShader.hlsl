@@ -17,18 +17,21 @@ struct ps_input
 
 struct ps_output
 {
-	float4 color : SV_Target0;
+	float4 Color : SV_Target0;
 };
 
 ps_output PSEntry(const ps_input input)
 {
+	bool RedChannelActive = (input.Color.r > 0.0f);
 	ps_output output;
-	output.color = input.Color;
-	[branch]if(input.Color.x == 1.0f){
-		output.color = float4(ColorR,ColorG,ColorB,ColorA);
+	output.Color = input.Color;
+	[branch]if(RedChannelActive){
+		output.Color = float4(ColorR,ColorG,ColorB,ColorA);
 	}
-	[flatten]if(input.Color.x == 0.0f){
-		output.color = float4(ColorR,ColorG,ColorB,ColorA);
+	
+	
+	[flatten]if(!RedChannelActive){
+		output.Color *= float4(1,output.Color.g +(ColorG/2),1,1);
 	}
 	return output;
 }

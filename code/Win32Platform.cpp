@@ -116,37 +116,37 @@ internal void MessageLoop(ID3D11Device* Device, float *ConstantBuffer){
 					//PassThrough
 					ClearActivePipelineState();
 					PushPipelineState(&PipelineStateArray[0]);
-					ConstantBuffer[0] = 200.0f;
+					if(!GlobalAnimationIsActive)ConstantBuffer[0] = 200.0f;
 					ResetModeAndOffset();
 				}
 				else if(VKCode == '2'){
 					ClearActivePipelineState();
 					PushPipelineState(&PipelineStateArray[7]);
-					ConstantBuffer[0] = 200.0f;
+					if(!GlobalAnimationIsActive)ConstantBuffer[0] = 200.0f;
 					ResetModeAndOffset();
 				}
 				else if(VKCode == '3'){
 					ClearActivePipelineState();
 					PushPipelineState(&PipelineStateArray[8]);
-					ConstantBuffer[0] = 200.0f;
+					if(!GlobalAnimationIsActive)ConstantBuffer[0] = 200.0f;
 					ResetModeAndOffset();
 				}
 				else if(VKCode == '4'){
 					ClearActivePipelineState();
 					PushPipelineState(&PipelineStateArray[9]);
-					ConstantBuffer[0] = 200.0f;
+					if(!GlobalAnimationIsActive)ConstantBuffer[0] = 200.0f;
 					ResetModeAndOffset();
 				}
 				else if(VKCode == '5'){
 					ClearActivePipelineState();
 					PushPipelineState(&PipelineStateArray[10]);
-					ConstantBuffer[0] = 200.0f;
+					if(!GlobalAnimationIsActive)ConstantBuffer[0] = 200.0f;
 					ResetModeAndOffset();
 				}
 				else if(VKCode == '6'){
 					ClearActivePipelineState();
 					PushPipelineState(&PipelineStateArray[11]);
-					ConstantBuffer[0] = 200.0f;
+					if(!GlobalAnimationIsActive)ConstantBuffer[0] = 200.0f;
 					ResetModeAndOffset();
 				}
 				

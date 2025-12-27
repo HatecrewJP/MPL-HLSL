@@ -91,17 +91,16 @@ Valid:
 \begin{minted}{hlsl}
   cbuffer CBuffer{
 	float RotationAngle : packoffset(c0.x);
-	float Width  : packoffset(c0.y);
-	float Height : packoffset(c0.z);
-	float ColorR : packoffset(c1.x);
-	float ColorG : packoffset(c1.y);
-	float ColorB : packoffset(c1.z);
-	float ColorA : packoffset(c1.w);
+	float Width         : packoffset(c0.y);
+	float Height        : packoffset(c0.z);
+	float ColorR        : packoffset(c1.x);
+	float ColorG        : packoffset(c1.y);
+	float ColorB        : packoffset(c1.z);
+	float ColorA        : packoffset(c1.w);
 };
 \end{minted}
 
 Invalid:
-
 \begin{minted}{hlsl}
   cbuffer{
       float2 x: packoffset(c0);   // x uses 2 components 
@@ -111,18 +110,88 @@ Invalid:
 
 Register:
 
+Assigns one or more registers to a variable. The register can be specified by the type, the buffer slot index and a subcomponent.
 
-
+\begin{minted}{hlsl}
+  float RotationAngle : register(b0[0]); //Constant Buffer at Index 0, Data at offset 0
+  float Width         : register(b0[1]); //Constant Buffer at Index 0, Data at offset 1
+  float Height        : register(b0[2]); //Constant Buffer at Index 0, Data at offset 2
+\end{minted}
 
 Annotations:
 
+Additional information added to a variable. Annotations are used by Effects.
+
+Examples from the documentation:
+\begin{minted}{hlsl}
+  int j <int bambam=30; string blacksheep="Goodbye There";> = 5 ;
+  float y <float y=2.3;> = 2.3, z <float y=1.3;> = 1.3 ;
+  half w <half GlobalW = 3.62;>;
+\end{minted}
+
 Initial\_Value:
 
+The Value, that the variable is initialized with.
 
 \subsection{Data Types}
+HLSL supports various data types. This section gives an overview over the different Data Types.
 \subsubsection{Scalar}
+Scalar variables use a single component of a register. There are different kinds of scalar data types.
+
+The main ones are:
+
+-bool : true or false
+-int : 32-bit signed integer
+-uint : 32-bit unsigned integer
+-half : 16-bit floating point
+-float : 32-bit floating point
+-double : 64-bit floating point
+-snorm float: 32-bit signed-normalized float in the intervall[-1,1]
+-unorm float: 32-bit unsigned-normalized float in the intervall[0,1]
+
+Examples:
+
+\begin{minted}{hlsl}
+  float RotationAngle;
+  bool  RedChannelActive;
+\end{minted}
+
 \subsubsection{Vector}
+Vector's are variables that use up to 4 components. The type can be any of the scalar data types. A vector can be declared in two ways.
+
+Declaration with a template:
+
+\begin{minted}{hlsl}
+  vector<Type = float, Components = 4> Color; // A four component float
+
+  vector<float, 1> RotationAngle; // A single component float, the same as a scalar float
+\end{minted}
+
+Type declaration:
+
+HLSL provides predefined macros for vectors of built-in scalar types.
+This simplifies the vector declarations.
+
+Macro example:
+\begin{minted}{hlsl}
+  #define float4 vector<float,4> //predefined macro
+  
+  float4 Var1;
+
+  //expands to
+  vector<float,4> Var1;
+\end{minted}
+
+
+Examples:
+\begin{minted}{hlsl}
+  float4 vPosition :SV_Position;
+	float4 Color : COLOR;
+	float3 Normal : NORMAL;
+\end{minted}
+
 \subsubsection{Matrix}
+
 \subsubsection{Buffer}
 \subsubsection{Struct}
 \subsection{Semantics}
