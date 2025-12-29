@@ -3,6 +3,8 @@
 #define DegreeToRad(x) ((x)*PI/180)
 
 
+
+
 float RotationAngle : register(b0[0]);
 float Width : register(b0[1]);
 float Height: register(b0[2]);

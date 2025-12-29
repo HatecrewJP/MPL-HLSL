@@ -31,7 +31,7 @@ global_variable bool GlobalAnimationIsActive = false;
 global_variable bool GlobalTesselationActive = false;
 global_variable bool GlobalGeometryShaderActive = true;
 
-static ShaderColor GlobalActiveShaderColor = WHITE;
+static ShaderColor GlobalActiveShaderColor = RED;
 
 global_variable GraphicsPipelineState PipelineStateArray[MAX_PIPELINE_STATES];
 global_variable unsigned int PipelineStateCount = 0;
@@ -68,13 +68,19 @@ global_variable ID3D11PixelShader* 		GlobalPixelShaderArray[MAX_PIXEL_SHADER_COU
 global_variable IndexedGeometryObject GlobalIndexedGeometryArray[64];
 global_variable unsigned int IndexedGeometryCount = 0;
 
+global_variable ComputeShaderState* GlobalActiveCSState = nullptr;
+
 global_variable ID3D11ShaderResourceView *GlobalCSShaderResourceView = nullptr;
-global_variable ID3D11ComputeShader *GlobalComputeShader = nullptr;
+global_variable ID3D11ComputeShader* GlobalComputeShaderArray[32];
+
+global_variable ComputeShaderState GlobalComputeShaderStateArray[32];
+
 global_variable ID3D11Texture2D *GlobalCSShaderResource = nullptr;
 global_variable ID3D11UnorderedAccessView *GlobalUAV = nullptr;
 ID3D11Texture2D *GlobalUAVTexture = nullptr;
 
 global_variable GraphicsPipelineState NILGraphicsPipelineState = {};
+global_variable ComputeShaderState NILComputeShaderState = {};
 //Windows functions
 
 LRESULT Wndproc(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam){
@@ -116,37 +122,71 @@ internal void MessageLoop(ID3D11Device* Device, float *ConstantBuffer){
 					//PassThrough
 					ClearActivePipelineState();
 					PushPipelineState(&PipelineStateArray[0]);
-					if(!GlobalAnimationIsActive)ConstantBuffer[0] = 200.0f;
+					if(!GlobalAnimationIsActive){
+						ConstantBuffer[0] = 200.0f;
+						GlobalActiveShaderColor = RED;
+					}
+					GlobalActiveCSState = &NILComputeShaderState;
 					ResetModeAndOffset();
 				}
 				else if(VKCode == '2'){
 					ClearActivePipelineState();
 					PushPipelineState(&PipelineStateArray[7]);
-					if(!GlobalAnimationIsActive)ConstantBuffer[0] = 200.0f;
+					if(!GlobalAnimationIsActive){
+						ConstantBuffer[0] = 200.0f;
+						GlobalActiveShaderColor = RED;
+					}
+					GlobalActiveCSState = &NILComputeShaderState;
 					ResetModeAndOffset();
 				}
 				else if(VKCode == '3'){
 					ClearActivePipelineState();
 					PushPipelineState(&PipelineStateArray[8]);
-					if(!GlobalAnimationIsActive)ConstantBuffer[0] = 200.0f;
+					if(!GlobalAnimationIsActive){
+						ConstantBuffer[0] = 200.0f;
+						GlobalActiveShaderColor = RED;
+					}
+					GlobalActiveCSState = &NILComputeShaderState;
 					ResetModeAndOffset();
 				}
 				else if(VKCode == '4'){
 					ClearActivePipelineState();
 					PushPipelineState(&PipelineStateArray[9]);
-					if(!GlobalAnimationIsActive)ConstantBuffer[0] = 200.0f;
+					if(!GlobalAnimationIsActive){
+						ConstantBuffer[0] = 200.0f;
+						GlobalActiveShaderColor = RED;
+					}
+					GlobalActiveCSState = &NILComputeShaderState;
 					ResetModeAndOffset();
 				}
 				else if(VKCode == '5'){
 					ClearActivePipelineState();
 					PushPipelineState(&PipelineStateArray[10]);
-					if(!GlobalAnimationIsActive)ConstantBuffer[0] = 200.0f;
+					if(!GlobalAnimationIsActive){
+						ConstantBuffer[0] = 200.0f;
+						GlobalActiveShaderColor = RED;
+					}
+					GlobalActiveCSState = &NILComputeShaderState;
 					ResetModeAndOffset();
 				}
 				else if(VKCode == '6'){
 					ClearActivePipelineState();
 					PushPipelineState(&PipelineStateArray[11]);
-					if(!GlobalAnimationIsActive)ConstantBuffer[0] = 200.0f;
+					if(!GlobalAnimationIsActive){
+						ConstantBuffer[0] = 200.0f;
+						GlobalActiveShaderColor = RED;
+					}
+					GlobalActiveCSState = &NILComputeShaderState;
+					ResetModeAndOffset();
+				}
+				else if(VKCode == '7'){
+					ClearActivePipelineState();
+					PushPipelineState(&PipelineStateArray[11]);
+					if(!GlobalAnimationIsActive){
+						ConstantBuffer[0] = 200.0f;
+						GlobalActiveShaderColor = RED;
+					}
+					GlobalActiveCSState = &GlobalComputeShaderStateArray[0];
 					ResetModeAndOffset();
 				}
 				
@@ -481,10 +521,10 @@ internal void AddPipelineStateToArray(GraphicsPipelineState PipelineState){
 	PipelineStateCount++;
 }
 
-internal void SetComputeShaderState(ID3D11DeviceContext *DeviceContext, ComputeShaderState &CSState){
-	DeviceContext->CSSetUnorderedAccessViews(0,CSState.UnorderedAccessViewCount,CSState.UnorderedAccessViewArray,nullptr);
-	DeviceContext->CSSetShaderResources(0,CSState.ShaderResourceViewCount,CSState.ShaderResourceViewArray);
-	DeviceContext->CSSetShader(CSState.ComputeShader,nullptr,0);
+internal void SetComputeShaderState(ID3D11DeviceContext *DeviceContext, ComputeShaderState *CSState){
+	DeviceContext->CSSetUnorderedAccessViews(0,CSState->UnorderedAccessViewCount,CSState->UnorderedAccessViewArray,nullptr);
+	DeviceContext->CSSetShaderResources(0,CSState->ShaderResourceViewCount,CSState->ShaderResourceViewArray);
+	DeviceContext->CSSetShader(CSState->ComputeShader,nullptr,0);
 }
 internal void ClearActivePipelineState(){
 	for(unsigned int i = 0; i < ActivePipelineStateCount; i++){
@@ -660,22 +700,22 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				/*Pos*/  0.50f, 0.50f, 1.00f, /*COLOR*/ 1.00f, 1.00f, 1.00f, 1.00f,
 			};
 			UINT CubeIndices[]{
-				//Front
+				//Front Face
 				0,2,3,
 				0,3,1,
-				//Back
+				//Back Face
 				5,6,4,
 				5,7,6,
-				//Left
+				//Left Face
 				4,6,2,
 				4,2,0,
-				//Right
+				//Right Face
 				1,3,7,
 				1,7,5,
-				//Top
+				//Top Face
 				2,6,7,
 				2,7,3,
-				//Bottom
+				//Bottom Face
 				0,4,5,
 				0,5,1
 			};
@@ -817,8 +857,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			float ConstantBufferData[64] = {};
 			ConstantBufferData[4] = 1.0f;
-			ConstantBufferData[5] = 1.0f;
-			ConstantBufferData[8] = 1.0f;
+			ConstantBufferData[5] = 0.0f;
+			ConstantBufferData[8] = 0.0f;
 			ConstantBufferData[9] = 1.0f;
 			//Buffer for Angle
 			D3D11_BUFFER_DESC AngleConstantBufferDesc;
@@ -872,6 +912,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					&ConstantBuffer,1,
 					&GlobalRenderTargetView, 1,
 					"1:Cube"));
+			
 			AddPipelineStateToArray(BuildPipelineState(
 					&GlobalVertexBufferArray[0],1,
 					(UINT*)&GlobalIndexedGeometryArray[0].VertexSize,
@@ -960,6 +1001,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					&GlobalRenderTargetView, 1,
 					"6:TriGeometryTesselationEnabled"));
 			
+			//Example
 			AddPipelineStateToArray(BuildPipelineState(
 					&GlobalVertexBufferArray[0],1,
 					(UINT*)&GlobalIndexedGeometryArray[0].VertexSize,
@@ -968,7 +1010,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					VSPassTroughInputLayout,
 					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 					VSPassTrough,
-					nullptr,0,
+					&ConstantBuffer,1,
 					nullptr,
 					nullptr,
 					nullptr,
@@ -976,8 +1018,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					&GlobalPixelShaderArray[0],
 					nullptr,0,
 					&GlobalRenderTargetView, 1,
-					"7:RasterizerSet"));
-						
+					"7:RasterizerSet"));	
 			
 			AddPipelineStateToArray(BuildPipelineState(
 					&GlobalVertexBufferArray[0],1,
@@ -996,6 +1037,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					nullptr,0,
 					&GlobalRenderTargetView, 1,
 					"8:VSActive"));
+					
 				
 					
 			AddPipelineStateToArray(BuildPipelineState(
@@ -1034,6 +1076,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					&GlobalRenderTargetView, 1,
 					"10:GeometryShader"));
 					
+					
 			AddPipelineStateToArray(BuildPipelineState(
 					&GlobalVertexBufferArray[0],1,
 					(UINT*)&GlobalIndexedGeometryArray[0].VertexSize,
@@ -1058,20 +1101,20 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			//ComputeShader
 			ShaderCode CSCode = Win32CompileShaderFromFile(L"ComputeShader.hlsl","CSEntry","cs_5_0");
 			ASSERT(CSCode.Code);
-			res = GlobalDevice->CreateComputeShader(CSCode.Code,CSCode.Size,nullptr,&GlobalComputeShader);
+			res = GlobalDevice->CreateComputeShader(CSCode.Code,CSCode.Size,nullptr,&GlobalComputeShaderArray[0]);
 			ASSERT(res==S_OK);
 			UpdateCSTexture(Width,Height);
 			
-			ComputeShaderState CSState = {};
-			CSState.ShaderResourceViewArray = &GlobalCSShaderResourceView;
-			CSState.ShaderResourceViewCount = 1;
-			CSState.UnorderedAccessViewArray = &GlobalUAV;
-			CSState.UnorderedAccessViewCount = 1;
-			CSState.ComputeShader = GlobalComputeShader;
+			
+			GlobalComputeShaderStateArray[0].ShaderResourceViewArray = &GlobalCSShaderResourceView;
+			GlobalComputeShaderStateArray[0].ShaderResourceViewCount = 1;
+			GlobalComputeShaderStateArray[0].UnorderedAccessViewArray = &GlobalUAV;
+			GlobalComputeShaderStateArray[0].UnorderedAccessViewCount = 1;
+			GlobalComputeShaderStateArray[0].ComputeShader = GlobalComputeShaderArray[0];
 			
 			
 			PushPipelineState(&PipelineStateArray[1]);
-			
+			GlobalActiveCSState = &NILComputeShaderState;
 
 			static unsigned int AnimationCount = 1;
 			GlobalRunning = true;
@@ -1107,8 +1150,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				ScissorRect.right 	= (LONG)(ViewPort.Width * 0.75f);
 				ScissorRect.bottom  = (LONG)(ViewPort.Height * 0.75f);
 				
-				const float RGBA[4] = {0,0,0,1};
-				GlobalDeviceContext->ClearRenderTargetView(GlobalRenderTargetView, RGBA);
+				const float BackgroundClearColorRGBA[4] = {0,0,0,1};
+				GlobalDeviceContext->ClearRenderTargetView(GlobalRenderTargetView, BackgroundClearColorRGBA);
 				
 				ConstantBufferData[1]=(float)Width;
 				ConstantBufferData[2]=(float)Height;
@@ -1125,18 +1168,20 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					ASSERT(DrawIndexCount);
 					GlobalDeviceContext->DrawIndexed(DrawIndexCount,0,0);
 				}
-
-				GlobalDeviceContext->CopyResource(GlobalCSShaderResource, GlobalFrameBuffer);
-				SetComputeShaderState(GlobalDeviceContext,CSState);
-				GlobalDeviceContext->Dispatch(Width,Height,1);
-				GlobalDeviceContext->CopyResource(GlobalFrameBuffer,GlobalCSShaderResource);
-				
+				if(GlobalActiveCSState->ComputeShader){
+					GlobalDeviceContext->CopyResource(GlobalCSShaderResource, GlobalFrameBuffer);
+					SetComputeShaderState(GlobalDeviceContext,GlobalActiveCSState);
+					GlobalDeviceContext->Dispatch(Width,Height,1);
+					GlobalDeviceContext->CopyResource(GlobalFrameBuffer,GlobalCSShaderResource);
+				}
 				
 				GlobalSwapChain->Present(1, 0);
 				
 				if (GlobalAnimationIsActive) {
 					AnimationCount = (AnimationCount + 1) % (60);
 					if (AnimationCount == 0) {
+						
+						
 						switch(GlobalActiveShaderColor){
 							case WHITE:{
 								ConstantBufferData[4] = 1.0f;

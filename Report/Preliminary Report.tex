@@ -11,11 +11,15 @@
 
 \section{HLSL Language}
 The HLSL Language is similar to the c programming language.
-A lot of it has been taken over from c, but some new things, that help programming the graphics pipeline, have been added.
+A lot of it has been taken over from c
+but some new things, that help programming the graphics pipeline, have been added.
 This section describes the language syntax.
 
-\subsection{Variable Syntax}
-In HLSL variables are declared with this syntax:
+
+\subsection{Variable Declaration Syntax}
+This section describes how variables are declared. 
+
+Some options are specific to more advanced features that are either explained later or are not discussed in this report.
 
 \small[Storage\_Class] [Type\_Modifier] Type Name[Index] [: Semantic] [: Packoffset] [: Register]; [Annotations] [= Initial\_Value] 
 \normalsize
@@ -43,9 +47,9 @@ Type:
 The type of the data being stored in the variable. It can be any of the HLSL Data Types.
 
 Examples:
-int: signed 32-bit integer
-dword: unsigned 32-bit integer  
-double: 64-bit floating point number
+\textbf{int}: signed 32-bit integer
+\textbf{dword}: unsigned 32-bit integer  
+\textbf{double}: 64-bit floating point number
 
 Name:
 
@@ -64,21 +68,11 @@ Examples:
 
 Semantic:
 
-Semantics are Strings attached to the input and output variables of shaders.
-These Strings are used by the graphics pipeline to identify the meaning of the variable.
-If there are multiple variables with the same semantic meaning, an Integer can be appended to the semantic.
-
-Examples:
-\begin{minted}{hlsl}
-  float4 Position : POSITION; //Position is treated as a Vertex Position.
-  float2 vPosition : VPOS;    //vPosition is treated as a Pixel Location. 
-  float3 Color : COLOR1;      //Color is treated as a Color.
-\end{minted}
-
+A String attached to shader inputs and outputs. 
 
 Packoffset:
 
-Each register has 4 32-bit components. When passing variables in a constant buffer to the GPU, some variables may not use all 4 subcomponents.
+Each register has 4 32-bit components. When passing variables in a buffer to the GPU, some variables may not use all 4 subcomponents.
 If each variable uses only one of those components and has its own register, a lot of memory would be wasted.
 To avoid wasting memory, data can be packed into registers, if the variables components are small enough to fully fit into the register.
 
@@ -122,7 +116,7 @@ Annotations:
 
 Additional information added to a variable. Annotations are used by Effects.
 
-Examples from the documentation:
+Examples from the HLSL reference:
 \begin{minted}{hlsl}
   int j <int bambam=30; string blacksheep="Goodbye There";> = 5 ;
   float y <float y=2.3;> = 2.3, z <float y=1.3;> = 1.3 ;
@@ -135,19 +129,27 @@ The Value, that the variable is initialized with.
 
 \subsection{Data Types}
 HLSL supports various data types. This section gives an overview over the different Data Types.
+
 \subsubsection{Scalar}
 Scalar variables use a single component of a register. There are different kinds of scalar data types.
 
 The main ones are:
 
--bool : true or false
--int : 32-bit signed integer
--uint : 32-bit unsigned integer
--half : 16-bit floating point
--float : 32-bit floating point
--double : 64-bit floating point
--snorm float: 32-bit signed-normalized float in the intervall[-1,1]
--unorm float: 32-bit unsigned-normalized float in the intervall[0,1]
+-\textbf{bool}: true or false
+
+-\textbf{int}: 32-bit signed integer
+
+-\textbf{uint}: 32-bit unsigned integer
+
+-\textbf{half}: 16-bit floating point
+
+-\textbf{float}: 32-bit floating point
+
+-\textbf{double}: 64-bit floating point
+
+-\textbf{snorm float}: 32-bit signed-normalized float in the intervall[-1,1]
+
+-\textbf{unorm float}: 32-bit unsigned-normalized float in the intervall[0,1]
 
 Examples:
 
@@ -157,12 +159,16 @@ Examples:
 \end{minted}
 
 \subsubsection{Vector}
+
 Vector's are variables that use up to 4 components. The type can be any of the scalar data types. A vector can be declared in two ways.
 
 Declaration with a template:
 
+vector<Type, Components = [1,4]>
+
+Example:
 \begin{minted}{hlsl}
-  vector<Type = float, Components = 4> Color; // A four component float
+   // A four component float
 
   vector<float, 1> RotationAngle; // A single component float, the same as a scalar float
 \end{minted}
@@ -170,14 +176,12 @@ Declaration with a template:
 Type declaration:
 
 HLSL provides predefined macros for vectors of built-in scalar types.
-This simplifies the vector declarations.
+This simplifies the vector declaration.
 
 Macro example:
 \begin{minted}{hlsl}
   #define float4 vector<float,4> //predefined macro
-  
   float4 Var1;
-
   //expands to
   vector<float,4> Var1;
 \end{minted}
@@ -190,26 +194,312 @@ Examples:
 	float3 Normal : NORMAL;
 \end{minted}
 
-\subsubsection{Matrix}
+Accessing a component can be done by using the structure operator \textbf{.} followd by the letters xyzw or rgba.
 
-\subsubsection{Buffer}
+Examples:
+\begin{minted}{hlsl}
+  Vector2.xy  //acceses the first and second component
+  Vector3.rgb //acceses the first second and third component
+  Vector4.yzw //accesses the second, third and fourth component
+\end{minted}
+
+The letters \textit{xyzw} or \textit{rgba} correspond to the components of a Vector.
+\textit{x} and \textit{r} correspond to the first component.
+\textit{y} and \textit{g} correspond to the second component.
+\textit{z} and \textit{b} correspond to the third component.
+\textit{w} and \textit{a} correspond to the fourth component.
+
+
+
+\subsubsection{Matrix}
+Matrices are two dimensional grids made of scalar components. HLSL allows matrices with one to four columns and rows respectively.
+
+Just like Vector's, there are two ways of declaring matrices.
+
+Template Declaration:
+
+matrix<Type, Rows = [1,4], Cols = [1,4]>
+
+Type Declaration:
+
+There are also macros for matrices provided by HLSL:
+
+\begin{minted}{hlsl}
+  #define float3x2 matrix<float,3,2>  //predefined macro
+  float3x2 Mat3x2;
+  //expands to
+  matrix<float,3,2> Mat3x2;
+
+\end{minted}
+
+Examples:
+\begin{minted}{hlsl}
+  float4x4 RollRotationMatrix = {         // A 4 by 4 Matrix
+	1.0f,0.0f,0.0f,0.0f,
+	0.0f,cos(RadAngle),-sin(RadAngle),0.0f,
+	0.0f,sin(RadAngle),cos(RadAngle),0.0f,
+	0.0f,0.0f,0.0f,1.0f};
+  
+  int3x2 Matrix = {}; // A 3 by 2 matrix, initialized with 0
+\end{minted}
+
+Accessing a component of a matrix can be done multiple ways using the structure operator \textbf{.}.
+
+One way is to follow \textbf{.} by \_mRC, where R and C correspond to Row/Column indices.
+
+Example: 
+
+\begin{minted}{hlsl}
+  //Accesses the first row of the RollRotationMatrix
+  float4 FirstRow = RollRotationMatrix._m00_m01_m02_m03; 
+\end{minted}
+
+\subsubsection{Buffers}
+
+Each stage of the graphics pipeline has the possibilty to hold references to buffers provided by the cpu.
+
+To acces these buffers, HLSL provides multiple buffer types.
+
+Examples of Buffer types:
+
+\textbf{cbuffer}:  A Constant Buffer Object
+
+\textbf{RWBuffer}:  A Read/write Buffer Object
+
+\textbf{RWTexture2D}: A 2d Texture Buffer Object
+
+Buffer Examples:
+
+\begin{minted}{hlsl}
+  // A Read/Write Texture2D Buffer Object 
+  RWTexture2D <float4> TextureCopy;
+  
+  //A Constant Buffer Object
+  cbuffer CBuffer{                          
+    float RotationAngle : packoffset(c0.x);
+    float Width  : packoffset(c0.y);
+    float Height : packoffset(c0.z);
+    float ColorR : packoffset(c1.x);
+    float ColorG : packoffset(c1.y);
+    float ColorB : packoffset(c2.x);
+    float ColorA : packoffset(c2.y);
+  };
+\end{minted}
+
+Each buffer object has its own way of accessing the data.
+
+Examples:
+
+Variables in a constant buffer can be used as global variables.
+\begin{minted}{hlsl}
+  //Accessing the CBuffer Object from the previous example.
+  RotationAngle +=1;
+\end{minted}
+
+RWTexture2D data can be accesed like an array.
+\begin{minted}{hlsl}
+  //Accessing the TextureCopy from the previous example
+  float4 Color = TextureCopy[0];
+\end{minted}
+
 \subsubsection{Struct}
+A Struct is a collection of data grouped together in memory.
+
+Structs are declared with the \textbf{struct} keyword.
+
+Examples:
+
+\begin{minted}{hlsl}
+  struct ps_input{
+    float4 vPosition : SV_Position;
+    float4 Color : COLOR;
+    float3 Normal : NORMAL;
+  };
+
+  struct ps_output{
+    float4 Color : SV_Target0;
+  };
+\end{minted}
+
+By using the structure operator \textbf{.} followed by the variable name, the data in a struct can be accessed.
+
+Example:
+
+\begin{minted}{hlsl}
+  ps_input Input;
+
+  float4 Color = Input.Color;
+  float3 Normal = Input.Normal;
+   
+\end{minted}
+
 \subsection{Semantics}
+Semantics are Strings attached to the input and output variables of shaders.
+These Strings are used by the graphics pipeline to identify the meaning of the variable.
+If there are multiple variables with the same semantic meaning, an Integer can be appended to the semantic.
+
+Examples:
+\begin{minted}{hlsl}
+  //Position is treated as a Vertex Position.
+  float4 Position : POSITION; 
+  
+  //vPosition is treated as a Pixel Location. 
+  float2 vPosition : VPOS;    
+  
+  //Color is treated as a Color.
+  float3 Color : COLOR1;      
+\end{minted}
+
 \subsection{Flow Control}
-\subsection{Functions}
+Since HLSL is a language for GPU's, and GPU's are made for Single Instruction Multiple Data(SIMD) paralell execution,
+flow control is different to cpu flow control.
+
+Branches on the cpu are simple, because comparisons operate on a single value.
+Therefore the cpu is able to use the result to choose which branch to take.
+Since GPU's are SIMD and operate on multiple values, branching can no longer be decided by a single value,
+since different branches would require different instructions, which is does not work with SIMD.
+
+Loops have to wait, until all loop conditions are equal to 0.
+
+HLSL uses c's flow control syntax, but adds additional options to it.
+
+The keywords are:
+\textbf{if}
+\textbf{switch}
+\textbf{do}
+\textbf{while}
+\textbf{for}
+\textbf{break}
+\textbf{continue}
+\textbf{discard}
+
+The \textbf{discard} keyword is added by HLSL. It can only be used in a pixel shader. 
+
+If a discard statement is executed, the shader will not output the result of the pixel.
+
+Example: 
+\begin{minted}{hlsl}
+  //The shader will not output anything,
+  //if the input's position has a positive z value.
+  if(input.Position.z > 0){
+    discard;
+  }
+\end{minted}
+
+HLSL adds two attributes to \textbf{if}-statements:
+
+\textbf{branch}:
+Executes only one side, depending on the condition.
+
+\textbf{flatten}: 
+Executes the \textit{true} and \textit{false} side of the if-statement and decides, which one use, based on the condition. 
+
 \subsection{Intrinsics}
+Intrinsic functions are functions, that map directly to Assembly instructions.
+
+Common examples are:
+\textbf{dot}: Calculates the dot product of two vectors
+\textbf{mul}: Matrix multiplication
+\textbf{cos}: Calculates the cosine
+
 \subsection{Shader Models}
+Shader Models specify, which features can be used in shaders using the Shader Model.
+New Shader Models introduce new features or adjust existing features.
+Each Shader Model specifies Shader Profiles, which are used when compiling the shaders.
+Every Shader Type has its own shader profile, available in different versions.
+
+Example:
+
+Shader Model 4 introduced the shader profiles cs\_4\_0 and cs\_4\_1. Both are shader profiles for compute shaders.
 
 \section{Graphics Pipeline}
+This section describes the Direct3D11 graphics pipeline, by looking at the state of each stage in the frame for this image and how each stage transforms its input.
+
+\includegraphics[height= 0.3\textheight]{Assets/FinalImage.png}
+
+\subsection{CPU Data}
+The process starts at the cpu. The cpu has to decide what data the GPU has to transform and in which way.
+
+The first step is to pass the Cube data to the gpu. This is done by creating a Vertex Buffer and an Index Buffer, 
+that contain the nescessary information for the input assembler.
+
+This is the data used:
+
+\begin{minted}{hlsl}
+  float CubeVertices[]{
+    /*Pos*/ -0.50f,-0.50f, 0.00f, /*COLOR*/ 0.00f, 0.00f, 0.00f, 1.00f,
+    /*Pos*/  0.50f,-0.50f, 0.00f, /*COLOR*/ 0.00f, 0.00f, 1.00f, 1.00f,
+    /*Pos*/ -0.50f, 0.50f, 0.00f, /*COLOR*/ 0.00f, 1.00f, 0.00f, 1.00f,
+    /*Pos*/  0.50f, 0.50f, 0.00f, /*COLOR*/ 0.00f, 1.00f, 1.00f, 1.00f,
+    /*Pos*/ -0.50f,-0.50f, 1.00f, /*COLOR*/ 1.00f, 0.00f, 0.00f, 1.00f,
+    /*Pos*/  0.50f,-0.50f, 1.00f, /*COLOR*/ 1.00f, 0.00f, 1.00f, 1.00f,
+    /*Pos*/ -0.50f, 0.50f, 1.00f, /*COLOR*/ 1.00f, 1.00f, 0.00f, 1.00f,
+    /*Pos*/  0.50f, 0.50f, 1.00f, /*COLOR*/ 1.00f, 1.00f, 1.00f, 1.00f,
+    };
+  UINT CubeIndices[]{
+    //Front Face
+    0,2,3,
+    0,3,1,
+    //Back Face
+    5,6,4,
+    5,7,6,
+    //Left Face
+    4,6,2,
+    4,2,0,
+    //Right Face
+    1,3,7,
+    1,7,5,
+    //Top Face
+    2,6,7,
+    2,7,3,
+    //Bottom Face
+    0,4,5,
+    0,5,1
+  };
+\end{minted}
+
 \subsection{Input Assembler Stage}
-\subsection{Vertex Shader Stage}
-\subsection{Tesselation Stage}
-\subsubsection{Hull Shader Stage}
-\subsubsection{Domain Shader Stage}
-\subsection{Geometry Shader Stage}
+The input assembler(IA) stage is responsible for transforming the vertices and indices into primitives, that can be processed.
+The primitive topology can be set by the cpu. The tesslation stage operates operates on patchlist topologies.
+To actually see what the stages before do to the vertices, a trianglelist topology is used. 
+Since the topology doesn't change the output of the stages before the tesselation stage, a different topology can be used to properly visualize the stages before.
+
+
+\subsection{Required Pipeline Stages}
+To see the an image from the data that has been passed to the cpu, a few pipeline stages must be active.
+In the cube example, vertex shader and pixel shader are active and only pass the data to the next stage without modifying it.
+The rasterizer stage cannot be programmed by a shader, but its state can be changed by the cpu. If no rasterizer state is set, the default state is used.
+
+This is the output after the IA stage and only passing through data.
+
+\includegraphics[height= 0.2\textheight]{Assets/PassThrough.png}
+
 \subsection{Rasterizer Stage}
+
+\includegraphics[height= 0.2\textheight]{Assets/Rasterizer.png}
+
+\subsection{Vertex Shader Stage}
+\includegraphics[height= 0.2\textheight]{Assets/VertexShader.png}
+\subsection{Tesselation Stage}
+
+\subsubsection{Hull Shader Stage}
+
+\subsubsection{Domain Shader Stage}
+\includegraphics[height= 0.2\textheight]{Assets/TesselationStage.png}
+
+
+\subsection{Geometry Shader Stage}
+\includegraphics[height= 0.2\textheight]{Assets/GeometryShader.png}
+
 \subsection{Pixel Shader Stage}
+\includegraphics[height= 0.2\textheight]{Assets/PixelShader.png}
 \subsection{Output Merger Stage}
+
+\subsection{Compute Shader}
+\includegraphics[height= 0.2\textheight]{Assets/ComputeShader.png}
+
+\subsection{FinalImage}
+\includegraphics{Assets/FinalImage.png}
 
 \section{Passing Data from the CPU to GPU}
 \subsection{Constant Buffer}
