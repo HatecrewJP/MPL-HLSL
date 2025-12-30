@@ -1,6 +1,6 @@
 \documentclass[acmsmall,screen,nonacm,review]{acmart}
 \usepackage{minted}
-
+\usepackage{hyperref}
 
 \title{An Introduction to HLSL}
 
@@ -351,7 +351,7 @@ Examples:
 \end{minted}
 
 \subsection{Flow Control}
-Since HLSL is a language for GPU's, and GPU's are made for Single Instruction Multiple Data(SIMD) paralell execution,
+Since HLSL is a language for GPU's, and GPU's are made for Single Instruction Multiple Data (SIMD) paralell execution,
 flow control is different to cpu flow control.
 
 Branches on the cpu are simple, because comparisons operate on a single value.
@@ -458,6 +458,8 @@ This is the data used:
   };
 \end{minted}
 
+The data describes 8 vertices, each one with a different color.
+
 \subsection{Input Assembler Stage}
 The input assembler(IA) stage is responsible for transforming the vertices and indices into primitives, that can be processed.
 The primitive topology can be set by the cpu. The tesslation stage operates operates on patchlist topologies.
@@ -475,31 +477,158 @@ This is the output after the IA stage and only passing through data.
 \includegraphics[height= 0.2\textheight]{Assets/PassThrough.png}
 
 \subsection{Rasterizer Stage}
+This stage is the stage before the pixel shader.
+Because the primitves are described by vectors in the preceeding stages,
+the rasterizer is responsible for transforming the data from the previous stages into a raser image. 
+The rasterizer takes the primitives and calculates which pixels in the image are covered by a primitive.
+There are different
+\href{https://learn.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-rasterizer-stage-rules}
+{rasterization rules}, depending on the primitve type, multisampling and anti-aliasing.
+
+The rasterizer cannot be programmed with a shader like the other stages, but some settings can be set by the cpu.
+It is possible to specify if the primitives are filled or a wireframe, enabling or disabling multisampling, enabling or disabling anti-aliasing.
+More settings can be found here: \url{https://learn.microsoft.com/en-us/windows/win32/api/D3D11/ns-d3d11-d3d11_rasterizer_desc}
+
+To properly see the effect of the different stages in the example, 
+the rasterizer is the first stage that is changed, even though it would be further down the pipeline.
+The rasterizer is set to wireframe mode.
 
 \includegraphics[height= 0.2\textheight]{Assets/Rasterizer.png}
 
+Notice, that the color seems to be dissapearing on the bottom left side. This is because the rasterizer is not only deciding, which pixels are filled,
+it also does other things like interpolating between per-vertex data. The vertex on the bottom left is the same color as the background 
+and the closer a pixel gets to this vertex, the more the pixels color is influenced by the vertex color.
+
 \subsection{Vertex Shader Stage}
+The vertex shader stage is the first stage after the input assembler stage. It is responsible for placing the primitves at the correct position on the screen.
+This stage is where rotations, scaling and translations or per-vertex lighting happens. The vertex shader is executed for every vertex passed from the input assembler, 
+but operates only at one at a time. 
+
+This is the stage, where the cube is being rotated and scaled down and the projected with an orthographic projection.
+
 \includegraphics[height= 0.2\textheight]{Assets/VertexShader.png}
-\subsection{Tesselation Stage}
 
-\subsubsection{Hull Shader Stage}
+This is the main function of the \href{https://gist.github.com/HatecrewJP/1a5f491b23e5101acf1bc5c783f65ece}{vertex shader}.
+\begin{minted}[linenos]{hlsl}
+  vs_output VSEntry(const vs_input input){
+    vs_output output;
+    float4 Input =  float4(input.vPosition,1);
 
-\subsubsection{Domain Shader Stage}
+    float4x4 OrthographicProjectionMatrix = {
+      1.0f,0.0f,0.0f,0.0f,
+      0.0f,1.0f,0.0f,0.0f,
+      0.0f,0.0f,-1.0f,0.0f,
+      0.0f,0.0f,0.0f,1.0f};
+
+    float4 Scaling = {0.5f,0.5f,0.5f,1};
+
+
+    Input *= Scaling;
+    //Rotation around the z-axis
+    Input = RotationYaw(Input,RotationAngle);
+    //Rotation around the y-axis
+    Input = RotationPitch(Input,RotationAngle);
+    //Rotation around the x-axis
+    Input = RotationRoll(Input,0);
+    Input.x /= (Width/Height);
+    output.vPosition = mul(Input,OrthographicProjectionMatrix);
+    output.Color =  input.Color;
+    output.Normal = float3(0,0,0);
+    return output;
+  }
+\end{minted}
+
+Most of the code is simple, but there are two interesting lines, line 18 and 19.
+
+The position data is normalized, in the intervall [-1,1], but the image it is rendered to is not square.
+Without line 18, the cube would be streched along the x-axis. To compensate for that, the x coordinates must be divided by the aspect ratio (Width/Height).
+
+Line 19 is interesting, because it is using the \textbf{mul} intrinsic. This intrinsic has to be used for efficient matrix multiplication.
+
+\subsection{Tesselation Stages}
+
+The tesselation stages enable hardware subdivision, which can be used to adjust the level of detail.
+There are three stages, which must all be enabled concurrently: The hull shader stages, the tesselation stage and the domain shader stage.
+
+The \textbf{Hull Shader Stage} requires the input topology to be a list of control points.
+Now the are two phases done by the hull shader stage in parallel: One phase is generating control-points for a patch from the control points, based on a specified geometry.
+The other phase is generating additional data, patch-constant data, for the patch, which determines how the patch is subdivided.
+
+Next is the \textbf{Tesselator Stage}, which cannot be programmed. It takes the patch generated by the hull shader and the patch-constant data as input 
+and outputs the surface topology and UV(W)-coordinates to the domain stage.
+
+The \textbf{Domain Shader Stage} is responsible for calculating the positions of the new vertices based on the patch from the hull shader and the UV(W)-coordinates from the tesselator.
+
+\begin{minted}{hlsl}
+    ConstantOutputType PatchConstantFunction(InputPatch<HsInput,3> inputPatch, uint PatchID : SV_PrimitiveID){
+    ConstantOutputType Output;
+
+    Output.Edges[0] = 1;
+    Output.Edges[1] = 1;
+    Output.Edges[2] = 1;
+
+    Output.inside = 2;
+
+    return Output;
+  }
+  
+  [domain("tri")]
+  [partitioning("pow2")]
+  [outputtopology("triangle_cw")]
+  [outputcontrolpoints(3)]
+  [patchconstantfunc("PatchConstantFunction")]
+  
+  HsOutput HSEntry(InputPatch<HsInput,3>patch, uint PointID : SV_OutputControlPointID, uint PatchID : SV_PrimitiveID){
+    HsOutput Output;
+    Output.Color = patch[PointID].Color;
+    Output.Position = patch[PointID].Position;
+
+    return Output;
+  }
+  
+  [domain("tri")]
+  DSOutput DSEntry(ConstantOutputType input, float3 UVWCoord : SV_DomainLocation, const OutputPatch<DSInput,3> patch){
+    DSOutput Output;
+    Output.Position = UVWCoord.x * patch[0].Position + UVWCoord.y * patch[1].Position + UVWCoord.z * patch[2].Position;
+    Output.Color = (patch[0].Color + patch[1].Color + patch[2].Color)/3.0f;
+    Output.Color.w = 1.0f;
+    Output.Normal = float3(0,0,0);
+    return Output;
+
+\end{minted}
+ 
+The hull shader provides two functions. The patch-constant function, which generates the patch-constant data, 
+and the main function, which generates the control-points for the patch.
+
+The main function of the domain shader calculates the new vertices.
+
+Before each main function properties must be declared within square brackets. The hull shader stage needs to know the control patch topology,
+the target topology, how many control points can be generated by the hull shader 
+and which function is used to calculate the patch-constant data.
+
+The domain shader needs to know the control patch topology.
+
+This is the cube, after tesselation:
 \includegraphics[height= 0.2\textheight]{Assets/TesselationStage.png}
 
 
 \subsection{Geometry Shader Stage}
+
 \includegraphics[height= 0.2\textheight]{Assets/GeometryShader.png}
 
 \subsection{Pixel Shader Stage}
+
 \includegraphics[height= 0.2\textheight]{Assets/PixelShader.png}
+
 \subsection{Output Merger Stage}
 
 \subsection{Compute Shader}
+
 \includegraphics[height= 0.2\textheight]{Assets/ComputeShader.png}
 
 \subsection{FinalImage}
-\includegraphics{Assets/FinalImage.png}
+
+\includegraphics[height= 0.2\textheight]{Assets/FinalImage.png}
 
 \section{Passing Data from the CPU to GPU}
 \subsection{Constant Buffer}
