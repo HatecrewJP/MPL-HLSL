@@ -21,10 +21,9 @@ struct ps_output{
 };
 
 ps_output PSEntry(const ps_input input){
-	bool RedChannelActive = (input.Color.r == 1.0f);
 	ps_output output;
 	output.Color = input.Color;
-	[branch]if(RedChannelActive){
+	[branch]if(input.Color.r == 1.0f){
 		output.Color = float4(ColorR,ColorG,ColorB,ColorA);
 	}
 	

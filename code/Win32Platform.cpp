@@ -800,7 +800,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			res = GlobalDevice->CreateGeometryShader(GSCode.Code,GSCode.Size,nullptr,&GlobalGeometryShaderArray[0]);
 			ASSERT(res==S_OK);
 			//GeometryShader
-			GSCode = Win32CompileShaderFromFile(L"GeometryShaderCube.hlsl","GSEntry","gs_5_0");
+			GSCode = Win32CompileShaderFromFile(L"GeometryShaderPassThrough.hlsl","GSEntry","gs_5_0");
 			ASSERT(GSCode.Code);
 			res = GlobalDevice->CreateGeometryShader(GSCode.Code,GSCode.Size,nullptr,&GlobalGeometryShaderArray[1]);
 			ASSERT(res==S_OK);
@@ -890,7 +890,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					nullptr,
 					nullptr,
 					nullptr,
-					GlobalPixelShaderArray,
+					&GlobalPixelShaderArray[0],
 					nullptr,0,
 					&GlobalRenderTargetView, 1,
 					"0:PassThrough"));
@@ -908,7 +908,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					nullptr,
 					GlobalGeometryShaderArray[1],
 					RasterizerState2,
-					&GlobalPixelShaderArray[1],
+					&GlobalPixelShaderArray[0],
 					&ConstantBuffer,1,
 					&GlobalRenderTargetView, 1,
 					"1:Cube"));
@@ -926,7 +926,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					nullptr,
 					GlobalGeometryShaderArray[0],
 					RasterizerState2,
-					&GlobalPixelShaderArray[1],
+					&GlobalPixelShaderArray[0],
 					&ConstantBuffer,1,
 					&GlobalRenderTargetView, 1,
 					"2:CubeGeometryShaderEnabled"));
@@ -943,7 +943,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					GlobalDomainShaderArray[0],
 					nullptr,
 					RasterizerState2,
-					&GlobalPixelShaderArray[1],
+					&GlobalPixelShaderArray[0],
 					&ConstantBuffer,1,
 					&GlobalRenderTargetView, 1,
 					"3:CubeGeometryTesselationEnabled"));
