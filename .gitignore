@@ -7,5 +7,8 @@
 *.pdf
 *.lua
 *.markdown.in
+*.bbl
+*.blg
+*.dbx
 \_minted
 \build

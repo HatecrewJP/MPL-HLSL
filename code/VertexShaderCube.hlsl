@@ -5,9 +5,9 @@
 
 
 
-float RotationAngle : register(b0[0]);
-float Width : register(b0[1]);
-float Height: register(b0[2]);
+uniform float RotationAngle : register(b0[0]);
+uniform float Width : register(b0[1]);
+uniform float Height: register(b0[2]);
 	
 struct vs_input
 {
