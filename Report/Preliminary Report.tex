@@ -113,27 +113,32 @@ Vector4.yzw //accesses the second, third and fourth component
 \subsection{Matrix}
 Matrices are two dimensional grids made of scalar components\cite{HLSLMatrix}. HLSL allows matrices with one to four columns and rows respectively.
 
-Like Vectors, there are two ways of declaring matrices:
+\noindent Like Vectors, there are two ways of declaring matrices:
 
 Template Declaration:\colorbox{bg}{\textbf{matrix}<Type, Rows = [1,4], Cols = [1,4]>}
 
 Type Declaration:\colorbox{bg}{Type[Rows]x[Columns]}
 
-\textit{Examples:}
+\noindent \textit{Examples:}
 
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-float4x4 RollRotationMatrix = {         // A 4 by 4 Matrix
+//A 4 by 4 Matrix
+float4x4 RollRotationMatrix = {
 1.0f,0.0f,0.0f,0.0f,
 0.0f,cos(RadAngle),-sin(RadAngle),0.0f,
 0.0f,sin(RadAngle),cos(RadAngle),0.0f,
 0.0f,0.0f,0.0f,1.0f};
 
-int3x2 Matrix = {}; // A 3 by 2 matrix, initialized with 0
+//A 3 by 2 matrix, initialized with 0
+int3x2 Matrix = {}; 
+
+//A 3 by 3 uint matrix
+matrix<uint,3,3> Mat3x3 
 \end{minted}
 
 \noindent Accessing a component of a matrix can be done multiple ways using the structure operator \textbf{.}\cite{HLSLComponentMath}. One way to index a component is \_mRC, where R and C correspond to Row/Column indices\cite{HLSLComponentMath}.
 
-\textit{Example:} 
+\noindent \textit{Example:} 
 
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
 //Accesses the first row of the RollRotationMatrix
@@ -468,6 +473,9 @@ HsOutput HSEntry(
 }
 
 
+
+
+
 [domain("tri")]
 DSOutput DSEntry(
   ConstantOutputType input, 
@@ -475,7 +483,9 @@ DSOutput DSEntry(
   const OutputPatch<DSInput,3> patch)
 {
   DSOutput Output;
-  Output.Position = UVWCoord.x * patch[0].Position + UVWCoord.y * patch[1].Position + UVWCoord.z * patch[2].Position;
+  Output.Position = UVWCoord.x * patch[0].Position
+                  + UVWCoord.y * patch[1].Position 
+                  + UVWCoord.z * patch[2].Position;
   Output.Color = (patch[0].Color + patch[1].Color + patch[2].Color)/3.0f;
   Output.Color.w = 1.0f;
   Output.Normal = float3(0,0,0);
@@ -514,15 +524,19 @@ void GSEntry(
   triangle GSInput InputTri[3] : SV_Position, 
   inout TriangleStream<GSOutput> OutStream)
 {
-  float4 MidPoint = (InputTri[0].Position + InputTri[1].Position + InputTri[2].Position)/3;
+  float4 MidPoint = (InputTri[0].Position + InputTri[1].Position 
+    + InputTri[2].Position)/3;
   MidPoint.w = 1.0f;
-  float4 MidPointColor = float4((InputTri[0].Color.xyz + InputTri[1].Color.xyz + InputTri[2].Color.xyz)/3,1);
+  float4 MidPointColor = float4((InputTri[0].Color.xyz 
+    + InputTri[1].Color.xyz + InputTri[2].Color.xyz)/3,1);
   GSOutput Output;
   Output.Color =  MidPointColor;
   Output.Color.w = 1.0f;
 
-  Output.Normal = CalculateNormalFromTriangle(InputTri[0].Position,InputTri[1].Position,MidPoint);
-  Output.Color.xyz = (InputTri[0].Color.xyz + InputTri[1].Color.xyz + MidPointColor.xyz)/3.0f;
+  Output.Normal = CalculateNormalFromTriangle(InputTri[0].Position,
+                                              InputTri[1].Position,MidPoint);
+  Output.Color.xyz = (InputTri[0].Color.xyz + InputTri[1].Color.xyz 
+    + MidPointColor.xyz)/3.0f;
   Output.Pos = InputTri[0].Position;
   OutStream.Append(Output);
   Output.Pos = InputTri[1].Position;
@@ -530,13 +544,17 @@ void GSEntry(
   Output.Pos = MidPoint;
   OutStream.Append(Output);
 
-  Output.Normal = CalculateNormalFromTriangle(InputTri[1].Position,InputTri[2].Position,MidPoint);
-  Output.Color.xyz = (InputTri[1].Color.xyz + InputTri[2].Color.xyz + MidPointColor.xyz)/3.0f;
+  Output.Normal = CalculateNormalFromTriangle(InputTri[1].Position,
+                                              InputTri[2].Position,MidPoint);
+  Output.Color.xyz = (InputTri[1].Color.xyz + InputTri[2].Color.xyz 
+    + MidPointColor.xyz)/3.0f;
   Output.Pos = InputTri[2].Position;
   OutStream.Append(Output);
 
-  Output.Normal = CalculateNormalFromTriangle(InputTri[2].Position,InputTri[0].Position,MidPoint);
-  Output.Color.xyz = (InputTri[2].Color.xyz + InputTri[0].Color.xyz + MidPointColor.xyz)/3.0f;
+  Output.Normal = CalculateNormalFromTriangle(InputTri[2].Position,
+                                              InputTri[0].Position,MidPoint);
+  Output.Color.xyz = (InputTri[2].Color.xyz + InputTri[0].Color.xyz 
+    + MidPointColor.xyz)/3.0f;
   Output.Pos = InputTri[0].Position;
   OutStream.Append(Output);
   OutStream.RestartStrip();
