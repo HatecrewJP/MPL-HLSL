@@ -1,18 +1,19 @@
 \documentclass[acmsmall,screen,nonacm,review]{acmart}
-
+\usepackage{tcolorbox}
 \usepackage{minted}
 \usepackage{hyperref}
 
 \begin{comment}
   TODO: 
-  -reduce pages
+  -reduce pages ?
   -code macro
   -acknowledgements
   -adjust layout
 
-  -minted settings :xleftmargins = 0.3cm
+  -minted settings :xleftmargin = 0.3cm
 \end{comment}
 
+\definecolor{bg}{rgb}{0.97,0.97,0.97}
 
 \author{}
 \email{}
@@ -25,6 +26,7 @@
 \title{An Introduction to HLSL}
 
 \begin{abstract}
+
 This document is an introduction to the shading language HLSL made for the course ``Seminar Modern Programming Languages'' at Ruhr-University Bochum 2025/2026.
 It starts with a brief look at the history of HLSL, which explains the purpose of the language.
 Following this are explanations of HLSL concepts including data types, semantics, flow control, intrinsics and shader models.
@@ -32,7 +34,7 @@ The last part is about the graphics pipeline. The pipeline stages are explained 
 observing the changes made by each stage. Each stage includes a brief explanation of the stage, a picture of the cube and 
 the main function of each shader.
 
-It is possible, that some concepts mentionend are not further explained or details are omitted, because they would go beyond the scope of this course. 
+\noindent It is possible, that some concepts mentionend are not further explained or details are omitted, because they would go beyond the scope of this course. 
 A list of concepts that are not explained can be found at the end of this document.
 
 \end{abstract}
@@ -66,45 +68,38 @@ The main data types are:
 \end{itemize}
 
 \subsection{Vector}
-Vector's are variables that use up to 4 components\cite{HLSLVector}. The type can be any of the scalar data types. A vector can be declared in two ways.
-\vfill
-\noindent Declaration with a template: 
+Vector's are variables that use up to 4 components\cite{HLSLVector}. The type can be any of the scalar data types. A vector can be declared in two ways:
 
-\textbf{vector}<Type, Components = [1,4]>
+Declaration with a template: \colorbox{bg}{\textbf{vector}<Type, Components = [1,4]>}
 
-\vfill
-Example:
-\begin{minted}{hlsl}
+\textit{Example:}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
 //A four component float
 vector<float, 4> ColorRGBA;
 
 //A single component float, the same as a scalar float
 vector<float, 1> RotationAngle; 
 \end{minted}
-\vfill
 
-Declaration as a type:
+Declaration as a type: \colorbox{bg}{\textbf{float[n]}, where n is a number in the intervall [1,4].}
 
-\textbf{float[n]}, where n is a number in the intervall [1,4].
-
-\vfill
-Declaration Examples:
-\begin{minted}{hlsl}
-  float4 vPosition :SV_Position;
-  float4 Color : COLOR;
-  float3 Normal : NORMAL;
+\textit{Examples:}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+float4 vPosition :SV_Position;
+float4 Color : COLOR;
+float3 Normal : NORMAL;
 \end{minted}
 
-Accessing a component can be done by using the structure operator ``\textbf{.}''\cite{HLSLComponentMath} followd by the letters xyzw or rgba.
+\noindent Accessing a component can be done by using the structure operator ``\textbf{.}''\cite{HLSLComponentMath} followd by the letters xyzw or rgba.
 
-Examples:
-\begin{minted}{hlsl}
-  Vector2.xy  //acceses the first and second component
-  Vector3.rgb //acceses the first second and third component
-  Vector4.yzw //accesses the second, third and fourth component
+\noindent\textit{Examples:}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+Vector2.xy  //acceses the first and second component
+Vector3.rgb //acceses the first second and third component
+Vector4.yzw //accesses the second, third and fourth component
 \end{minted}
 
-The letters \textit{xyzw} or \textit{rgba} correspond to the components of a Vector.
+\noindent The letters \textit{xyzw} or \textit{rgba} correspond to the components of a Vector.
 \begin{itemize}
   \item\textit{x} and \textit{r} correspond to the first component.
   \item\textit{y} and \textit{g} correspond to the second component.
@@ -118,43 +113,38 @@ The letters \textit{xyzw} or \textit{rgba} correspond to the components of a Vec
 \subsection{Matrix}
 Matrices are two dimensional grids made of scalar components\cite{HLSLMatrix}. HLSL allows matrices with one to four columns and rows respectively.
 
-Just like Vector's, there are two ways of declaring matrices.
+Like Vectors, there are two ways of declaring matrices:
 
-Template Declaration:
+Template Declaration:\colorbox{bg}{\textbf{matrix}<Type, Rows = [1,4], Cols = [1,4]>}
 
-matrix<Type, Rows = [1,4], Cols = [1,4]>
+Type Declaration:\colorbox{bg}{Type[Rows]x[Columns]}
 
-Type Declaration:
+\textit{Examples:}
 
-Examples:
-\begin{minted}{hlsl}
-  float4x4 RollRotationMatrix = {         // A 4 by 4 Matrix
-	1.0f,0.0f,0.0f,0.0f,
-	0.0f,cos(RadAngle),-sin(RadAngle),0.0f,
-	0.0f,sin(RadAngle),cos(RadAngle),0.0f,
-	0.0f,0.0f,0.0f,1.0f};
-  
-  int3x2 Matrix = {}; // A 3 by 2 matrix, initialized with 0
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+float4x4 RollRotationMatrix = {         // A 4 by 4 Matrix
+1.0f,0.0f,0.0f,0.0f,
+0.0f,cos(RadAngle),-sin(RadAngle),0.0f,
+0.0f,sin(RadAngle),cos(RadAngle),0.0f,
+0.0f,0.0f,0.0f,1.0f};
+
+int3x2 Matrix = {}; // A 3 by 2 matrix, initialized with 0
 \end{minted}
 
-Accessing a component of a matrix can be done multiple ways using the structure operator \textbf{.}\cite{HLSLComponentMath}.
+\noindent Accessing a component of a matrix can be done multiple ways using the structure operator \textbf{.}\cite{HLSLComponentMath}. One way to index a component is \_mRC, where R and C correspond to Row/Column indices\cite{HLSLComponentMath}.
 
-One way to index a component is \_mRC, where R and C correspond to Row/Column indices\cite{HLSLComponentMath}.
+\textit{Example:} 
 
-Example: 
-
-\begin{minted}{hlsl}
-  //Accesses the first row of the RollRotationMatrix
-  float4 FirstRow = RollRotationMatrix._m00_m01_m02_m03; 
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+//Accesses the first row of the RollRotationMatrix
+float4 FirstRow = RollRotationMatrix._m00_m01_m02_m03; 
 \end{minted}
 
 \subsection{Buffers}
 
-Each stage of the graphics pipeline has the possibilty to hold references to buffers provided by the cpu.
+Each stage of the graphics pipeline has the possibilty to hold references to buffers provided by the cpu. To acces these buffers, HLSL provides multiple buffer types.
 
-To acces these buffers, HLSL provides multiple buffer types.
-
-Examples of Buffer types:
+\noindent Examples of Buffer types:
 \begin{itemize}
 \item\textbf{cbuffer}:  A Constant Buffer Object
 \item\textbf{RWBuffer}:  A Read/write Buffer Object
@@ -162,69 +152,65 @@ Examples of Buffer types:
 \end{itemize}
 
 
-Buffer Examples:
+\textit{Buffer Examples:}
 
-\begin{minted}{hlsl}
-  // A Read/Write Texture2D Buffer Object 
-  RWTexture2D <float4> TextureCopy;
-  
-  //A Constant Buffer Object
-  cbuffer CBuffer{                          
-    float RotationAngle : packoffset(c0.x);
-    float Width  : packoffset(c0.y);
-    float Height : packoffset(c0.z);
-    float ColorR : packoffset(c1.x);
-    float ColorG : packoffset(c1.y);
-    float ColorB : packoffset(c2.x);
-    float ColorA : packoffset(c2.y);
-  };
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+// A Read/Write Texture2D Buffer Object 
+RWTexture2D <float4> TextureCopy;
+
+//A Constant Buffer Object
+cbuffer CBuffer{                          
+  float RotationAngle : packoffset(c0.x);
+  float Width  : packoffset(c0.y);
+  float Height : packoffset(c0.z);
+  float ColorR : packoffset(c1.x);
+  float ColorG : packoffset(c1.y);
+  float ColorB : packoffset(c2.x);
+  float ColorA : packoffset(c2.y);
+};
 \end{minted}
 
-Each buffer object has its own way of accessing the data.
+\noindent Each buffer object has its own way of accessing the data.
 
-Examples:
+\noindent \textit{Examples:}
 
 Variables in a constant buffer can be used as global variables.
-\begin{minted}{hlsl}
-  //Accessing the CBuffer Object from the previous example.
-  RotationAngle +=1;
+
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+//Accessing the CBuffer Object from the previous example.
+RotationAngle +=1;
 \end{minted}
 
 RWTexture2D data can be accesed like an array.
-\begin{minted}{hlsl}
-  //Accessing the TextureCopy from the previous example
-  float4 Color = TextureCopy[0];
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+//Accessing the TextureCopy from the previous example
+float4 Color = TextureCopy[0];
 \end{minted}
 
 \subsection{Struct}
-A Struct is a collection of data grouped together in memory.
+A Struct is a collection of data grouped together in memory. Structs are declared with the \textbf{struct} keyword.
 
-Structs are declared with the \textbf{struct} keyword.
+\noindent \textit{Examples:}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+struct ps_input{
+  float4 vPosition : SV_Position;
+  float4 Color : COLOR;
+  float3 Normal : NORMAL;
+};
 
-Examples:
-
-\begin{minted}{hlsl}
-  struct ps_input{
-    float4 vPosition : SV_Position;
-    float4 Color : COLOR;
-    float3 Normal : NORMAL;
-  };
-
-  struct ps_output{
-    float4 Color : SV_Target0;
-  };
+struct ps_output{
+  float4 Color : SV_Target0;
+};
 \end{minted}
 
-By using the structure operator ``\textbf{.}'' followed by the variable name, the data in a struct can be accessed.
+\noindent By using the structure operator ``\textbf{.}'' followed by the variable name, the data in a struct can be accessed.
 
-Example:
+\noindent \textit{Example:}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+ps_input Input;
 
-\begin{minted}{hlsl}
-  ps_input Input;
-
-  float4 Color = Input.Color;
-  float3 Normal = Input.Normal;
-   
+float4 Color = Input.Color;
+float3 Normal = Input.Normal;   
 \end{minted}
 
 \section{Semantics}
@@ -232,8 +218,8 @@ Semantics are Strings attached to the input and output variables of shaders\cite
 These Strings are used by the graphics pipeline to identify the meaning of the variable.
 If there are multiple variables with the same semantic meaning, an Integer can be appended to the semantic.
 
-Examples:
-\begin{minted}{hlsl}
+\noindent \textit{Examples:}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
   //Position is treated as a Vertex Position.
   float4 Position : POSITION; 
   
@@ -247,17 +233,14 @@ Examples:
 \section{Flow Control}
 Since HLSL is a language for GPU's, and GPU's are made for Single Instruction Multiple Data (SIMD) parallel execution,
 flow control is different to cpu flow control.
-
 Branches on the cpu are simple, because comparisons operate on a single value.
 Therefore the cpu is able to use the result to choose which branch to take.
 Since GPU's are SIMD and operate on multiple values, branching can no longer be decided by a single value,
 since different branches would require different instructions, which is does not work with SIMD.\@\cite{NvidiaFlowControl}
-
 Loops have to wait, until all loop conditions are equal to 0.
-
 HLSL uses c's flow control syntax, but adds additional options to it.
 
-The keywords are:
+\noindent The keywords are:
 \begin{itemize}
 \item\textbf{if}
 \item\textbf{switch}
@@ -269,20 +252,11 @@ The keywords are:
 \item\textbf{discard}
 \end{itemize}
 
-
-
-
-
-
-
-
-
-The \textbf{discard} keyword is added by HLSL.\@ It can only be used in a pixel shader. 
-
+\noindent The \textbf{discard} keyword is added by HLSL.\@ It can only be used in a pixel shader. 
 If a discard statement is executed, the shader will not output the result of the pixel\cite{HLSLDiscard}.
 
-Example: 
-\begin{minted}{hlsl}
+\noindent \textit{Example:} 
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
   //The shader will not output anything,
   //if the input's position has a positive z value.
   if(input.Position.z > 0){
@@ -290,13 +264,13 @@ Example:
   }
 \end{minted}
 
-HLSL adds two attributes to \textbf{if}-statements:
+\noindent HLSL adds two attributes to \textbf{if}-statements:
+\begin{itemize}
+  \item \textbf{branch}: Executes only one side, depending on the condition.
 
-\textbf{branch}:
-Executes only one side, depending on the condition.
+  \item \textbf{flatten}: Executes the \textit{true} and \textit{false} side of the if-statement and decides, which one use, based on the condition. 
+\end{itemize}
 
-\textbf{flatten}: 
-Executes the \textit{true} and \textit{false} side of the if-statement and decides, which one use, based on the condition. 
 
 \section{Intrinsics}
 Intrinsic functions are functions, that map directly to Assembly instructions.\\
@@ -313,56 +287,54 @@ New Shader Models introduce new features or adjust existing features.
 Each Shader Model specifies Shader Profiles\cite{HLSLShaderModel}, which are used when compiling the shaders.
 Every Shader Type has its own shader profile, available in different versions.
 
-Example:
+\noindent \textit{Example:}
 
 Shader Model 4 introduced the shader profiles cs\_4\_0 and cs\_4\_1. Both are shader profiles for compute shaders.
 
 \section{Graphics Pipeline}
 This section describes the Direct3D11 graphics pipeline, by looking at the state of each stage in the frame for this image and how each stage transforms its input.
 
-\includegraphics[height= 0.3\textheight]{Assets/FinalImage.png}
+\noindent \includegraphics[height= 0.3\textheight]{Assets/FinalImage.png}
 
 \subsection{CPU Data}
 The process starts at the cpu. The cpu has to decide what data the GPU has to transform and in which way.
-
 The first step is to pass the Cube data to the gpu. This is done by creating a Vertex Buffer and an Index Buffer, 
 that contain the necessary information for the input assembler.
 
-This is the data used:
+\noindent \textbf{This is the data used:}
 
-\begin{minted}{hlsl}
-  float CubeVertices[]{
-    /*Pos*/ -0.50f,-0.50f, 0.00f, /*COLOR*/ 0.00f, 0.00f, 0.00f, 1.00f,
-    /*Pos*/  0.50f,-0.50f, 0.00f, /*COLOR*/ 0.00f, 0.00f, 1.00f, 1.00f,
-    /*Pos*/ -0.50f, 0.50f, 0.00f, /*COLOR*/ 0.00f, 1.00f, 0.00f, 1.00f,
-    /*Pos*/  0.50f, 0.50f, 0.00f, /*COLOR*/ 0.00f, 1.00f, 1.00f, 1.00f,
-    /*Pos*/ -0.50f,-0.50f, 1.00f, /*COLOR*/ 1.00f, 0.00f, 0.00f, 1.00f,
-    /*Pos*/  0.50f,-0.50f, 1.00f, /*COLOR*/ 1.00f, 0.00f, 1.00f, 1.00f,
-    /*Pos*/ -0.50f, 0.50f, 1.00f, /*COLOR*/ 1.00f, 1.00f, 0.00f, 1.00f,
-    /*Pos*/  0.50f, 0.50f, 1.00f, /*COLOR*/ 1.00f, 1.00f, 1.00f, 1.00f,
-    };
-  UINT CubeIndices[]{
-    //Front Face
-    0,2,3,
-    0,3,1,
-    //Back Face
-    5,6,4,
-    5,7,6,
-    //Left Face
-    4,6,2,
-    4,2,0,
-    //Right Face
-    1,3,7,
-    1,7,5,
-    //Top Face
-    2,6,7,
-    2,7,3,
-    //Bottom Face
-    0,4,5,
-    0,5,1
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
+float CubeVertices[]{
+  /*Pos*/ -0.50f,-0.50f, 0.00f, /*COLOR*/ 0.00f, 0.00f, 0.00f, 1.00f,
+  /*Pos*/  0.50f,-0.50f, 0.00f, /*COLOR*/ 0.00f, 0.00f, 1.00f, 1.00f,
+  /*Pos*/ -0.50f, 0.50f, 0.00f, /*COLOR*/ 0.00f, 1.00f, 0.00f, 1.00f,
+  /*Pos*/  0.50f, 0.50f, 0.00f, /*COLOR*/ 0.00f, 1.00f, 1.00f, 1.00f,
+  /*Pos*/ -0.50f,-0.50f, 1.00f, /*COLOR*/ 1.00f, 0.00f, 0.00f, 1.00f,
+  /*Pos*/  0.50f,-0.50f, 1.00f, /*COLOR*/ 1.00f, 0.00f, 1.00f, 1.00f,
+  /*Pos*/ -0.50f, 0.50f, 1.00f, /*COLOR*/ 1.00f, 1.00f, 0.00f, 1.00f,
+  /*Pos*/  0.50f, 0.50f, 1.00f, /*COLOR*/ 1.00f, 1.00f, 1.00f, 1.00f,
   };
+UINT CubeIndices[]{
+  //Front Face
+  0,2,3,
+  0,3,1,
+  //Back Face
+  5,6,4,
+  5,7,6,
+  //Left Face
+  4,6,2,
+  4,2,0,
+  //Right Face
+  1,3,7,
+  1,7,5,
+  //Top Face
+  2,6,7,
+  2,7,3,
+  //Bottom Face
+  0,4,5,
+  0,5,1
+};
 \end{minted}
-
 The data describes 8 vertices, each one with a different color.
 
 \subsection{Input Assembler Stage}
@@ -371,15 +343,14 @@ The primitive topology can be set by the cpu. The tesslation stage is the only s
 To actually see  what the stages before the tesselation stage do to the vertices in the example, a trianglelist topology is used. 
 Since the topology doesn't change the output of the stages before the tesselation stage, a different topology can be used to properly visualize the stages before.
 
-
 \subsection{Required Pipeline Stages}
 To see the an image from the data that has been passed to the cpu, a few pipeline stages must be active\cite{HLSLVS}.
 In the cube example, vertex shader and pixel shader are active and only pass the data to the next stage without modifying it.
 The rasterizer stage cannot be programmed by a shader, but its state can be changed by the cpu. If no rasterizer state is set, the default state is used.
 
-This is the output after the IA stage and only passing through data.
+\noindent This is the output after the IA stage and only passing through data.
 
-\includegraphics[height= 0.2\textheight]{Assets/PassThrough.png}
+\noindent \includegraphics[height= 0.2\textheight]{Assets/PassThrough.png}
 
 \subsection{Rasterizer Stage}
 This stage is the last stage before the pixel shader.
@@ -390,17 +361,17 @@ There are different
 \href{https://learn.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-rasterizer-stage-rules}
 {rasterization rules}, depending on the primitve type, multisampling and anti-aliasing.
 
-The rasterizer cannot be programmed with a shader like the other stages, but some settings can be set by the cpu.
+\noindent The rasterizer cannot be programmed with a shader like the other stages, but some settings can be set by the cpu.
 It is possible to specify if the primitives are filled or a wireframe, enabling or disabling multisampling, enabling or disabling anti-aliasing.
-More settings can be found here: \url{https://learn.microsoft.com/en-us/windows/win32/api/D3D11/ns-d3d11-d3d11_rasterizer_desc}
+More settings can be found in the \href{https://learn.microsoft.com/en-us/windows/win32/api/D3D11/ns-d3d11-d3d11_rasterizer_desc}{Direct3D reference}.
 
-To properly see the effect of the different stages in the example, 
+\noindent To properly see the effect of the different stages in the example, 
 the rasterizer is the first stage that is changed, even though it would be further down the pipeline.
 The rasterizer is set to wireframe mode.
 
-\includegraphics[height= 0.2\textheight]{Assets/Rasterizer.png}
+\noindent \includegraphics[height= 0.2\textheight]{Assets/Rasterizer.png}
 
-Notice, that the color seems to be dissapearing on the bottom left side. This is because the rasterizer is not only deciding, which pixels are filled,
+\noindent Notice, that the color seems to be dissapearing on the bottom left side. This is because the rasterizer is not only deciding, which pixels are filled,
 it also does other things like interpolating between per-vertex data. The vertex on the bottom left is the same color as the background 
 and the closer a pixel gets to this vertex, the more the pixels color is influenced by the vertex color.
 
@@ -409,119 +380,122 @@ The vertex shader stage is the first stage after the input assembler stage. It i
 This stage is where rotations, scaling and translations or per-vertex lighting happens. The vertex shader is executed for every vertex passed from the input assembler\cite{HLSLVS}, 
 but operates only at one at a time. 
 
-This is the stage, where the cube is being rotated and scaled down and the projected with an orthographic projection.
+\noindent This is the stage, where the cube is being rotated and scaled down and the projected with an orthographic projection.
 
-\includegraphics[height= 0.2\textheight]{Assets/VertexShader.png}
+\noindent \includegraphics[height= 0.2\textheight]{Assets/VertexShader.png}
 
-This is the main function of the \href{https://gist.github.com/HatecrewJP/1a5f491b23e5101acf1bc5c783f65ece}{vertex shader}.
-\begin{minted}[linenos]{hlsl}
-  uniform float RotationAngle : register(b0[0]);
-  uniform float Width : register(b0[1]);
-  uniform float Height: register(b0[2]);
-  
-  vs_output VSEntry(const vs_input input){
-    vs_output output;
-    float4 Input =  float4(input.vPosition,1);
+\href{https://gist.github.com/HatecrewJP/1a5f491b23e5101acf1bc5c783f65ece}{VertexShader}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
+vs_output VSEntry(const vs_input input){
+  vs_output output;
 
-    float4x4 OrthographicProjectionMatrix = {
-      1.0f,0.0f,0.0f,0.0f,
-      0.0f,1.0f,0.0f,0.0f,
-      0.0f,0.0f,-1.0f,0.0f,
-      0.0f,0.0f,0.0f,1.0f};
+  float4 Input =  float4(input.vPosition,1);
+  float4x4 OrthographicProjectionMatrix = {
+  	1.0f,0.0f,0.0f,0.0f,
+  	0.0f,1.0f,0.0f,0.0f,
+  	0.0f,0.0f,-1.0f,0.0f,
+  	0.0f,0.0f,0.0f,1.0f};
+  float4 Scaling = {0.5f,0.5f,0.5f,1};
 
-    float4 Scaling = {0.5f,0.5f,0.5f,1};
-
-
-    Input *= Scaling;
-    //Rotation around the z-axis
-    Input = RotationYaw(Input,RotationAngle);
-    //Rotation around the y-axis
-    Input = RotationPitch(Input,RotationAngle);
-    //Rotation around the x-axis
-    Input = RotationRoll(Input,0);
-    Input.x /= (Width/Height);
-    output.vPosition = mul(Input,OrthographicProjectionMatrix);
-    output.Color =  input.Color;
-    output.Normal = float3(0,0,0);
-    return output;
-  }
+  Input *= Scaling;
+  Input = RotationYaw(Input,RotationAngle);
+  Input = RotationPitch(Input,RotationAngle);
+  Input = RotationRoll(Input,0);
+  Input.x /= (Width/Height);
+  output.vPosition = mul(Input,OrthographicProjectionMatrix);
+  output.Color =  input.Color;
+  output.Normal = float3(0,0,0);
+  return output;
+}
 \end{minted}
 
-Most of the code is simple, but there are two interesting lines, line 18 and 19 and the uniform declared variables.
+\noindent This is the main function of the vertex shader. Most of the code is simple, but there are two interesting lines, line 18 and 19 and the uniform declared variables.
 
-Variables declared as \textbf{uniform} have the same value for all invokations within a render pass and are constant.\cite{HLSLVars}
+\noindent Variables declared as \textbf{uniform} have the same value for all invokations within a render pass and are constant.\cite{HLSLVars}
 
-The position data is normalized, in the intervall [-1,1], but the image it is rendered to is not square.
+\noindent The position data is normalized, in the intervall [-1,1], but the image it is rendered to is not square.
 Without line 18, the cube would be streched along the x-axis. To compensate for that, the x coordinates must be divided by the aspect ratio (Width/Height).
 
-Line 19 is interesting, because it is using the \textbf{mul} intrinsic. This intrinsic has to be used for efficient matrix multiplication.
+\noindent Line 19 is interesting, because it is using the \textbf{mul} intrinsic. This intrinsic has to be used for efficient matrix multiplication.
 
 \subsection{Tesselation Stages}
-
 The tesselation stages enable hardware subdivision, which can be used to adjust the level of detail.
 There are three stages, which must all be enabled concurrently: The hull shader stage, the tesselation stage and the domain shader stage.
 
-The \textbf{Hull Shader Stage} requires the input topology to be a list of control points.
+\noindent The \textbf{Hull Shader Stage} requires the input topology to be a list of control points.
 Now the are two phases done by the hull shader stage in parallel\cite{HLSLTess}: One phase is generating control-points for a patch from the control points, based on a specified geometry.
 The other phase is generating additional data, patch-constant data, for the patch, which determines how the patch is subdivided.
 
-Next is the \textbf{Tesselator Stage}, which cannot be programmed. It takes the patch generated by the hull shader and the patch-constant data as input 
+\noindent Next is the \textbf{Tesselator Stage}, which cannot be programmed. It takes the patch generated by the hull shader and the patch-constant data as input 
 and outputs the surface topology and UV(W)-coordinates to the domain stage\cite{HLSLTess}.
 
-The \textbf{Domain Shader Stage} is responsible for calculating the positions of the new vertices based on the patch from the hull shader and the UV(W)-coordinates from the tesselator.
+\noindent The \textbf{Domain Shader Stage} is responsible for calculating the positions of the new vertices based on the patch from the hull shader and the UV(W)-coordinates from the tesselator.
 
-\begin{minted}{hlsl}
-    ConstantOutputType PatchConstantFunction(InputPatch<HsInput,3> inputPatch, uint PatchID : SV_PrimitiveID){
-    ConstantOutputType Output;
+\href{https://gist.github.com/HatecrewJP/8898a51f45c2937ac1964ce53ce62eea}{Hull Shader} and 
+\href{https://gist.github.com/HatecrewJP/97633439372d09aa21b89a5f4318541a}{Domain Shader}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
+ConstantOutputType PatchConstantFunction(
+  InputPatch<HsInput,3> inputPatch, 
+  uint PatchID : SV_PrimitiveID)
+{
+  ConstantOutputType Output;
 
-    Output.Edges[0] = 1;
-    Output.Edges[1] = 1;
-    Output.Edges[2] = 1;
+  Output.Edges[0] = 1;
+  Output.Edges[1] = 1;
+  Output.Edges[2] = 1;
 
-    Output.inside = 2;
+  Output.inside = 2;
 
-    return Output;
-  }
-  
-  [domain("tri")]
-  [partitioning("pow2")]
-  [outputtopology("triangle_cw")]
-  [outputcontrolpoints(3)]
-  [patchconstantfunc("PatchConstantFunction")]
-  
-  HsOutput HSEntry(InputPatch<HsInput,3>patch, uint PointID : SV_OutputControlPointID, uint PatchID : SV_PrimitiveID){
-    HsOutput Output;
-    Output.Color = patch[PointID].Color;
-    Output.Position = patch[PointID].Position;
+  return Output;
+}
 
-    return Output;
-  }
-  
-  [domain("tri")]
-  DSOutput DSEntry(ConstantOutputType input, float3 UVWCoord : SV_DomainLocation, const OutputPatch<DSInput,3> patch){
-    DSOutput Output;
-    Output.Position = UVWCoord.x * patch[0].Position + UVWCoord.y * patch[1].Position + UVWCoord.z * patch[2].Position;
-    Output.Color = (patch[0].Color + patch[1].Color + patch[2].Color)/3.0f;
-    Output.Color.w = 1.0f;
-    Output.Normal = float3(0,0,0);
-    return Output;
 
+[domain("tri")]
+[partitioning("pow2")]
+[outputtopology("triangle_cw")]
+[outputcontrolpoints(3)]
+[patchconstantfunc("PatchConstantFunction")]
+HsOutput HSEntry(
+  InputPatch<HsInput,3>patch, 
+  uint PointID : SV_OutputControlPointID, 
+  uint PatchID : SV_PrimitiveID)
+{
+  HsOutput Output;
+  Output.Color = patch[PointID].Color;
+  Output.Position = patch[PointID].Position;
+
+  return Output;
+}
+
+
+[domain("tri")]
+DSOutput DSEntry(
+  ConstantOutputType input, 
+  float3 UVWCoord : SV_DomainLocation, 
+  const OutputPatch<DSInput,3> patch)
+{
+  DSOutput Output;
+  Output.Position = UVWCoord.x * patch[0].Position + UVWCoord.y * patch[1].Position + UVWCoord.z * patch[2].Position;
+  Output.Color = (patch[0].Color + patch[1].Color + patch[2].Color)/3.0f;
+  Output.Color.w = 1.0f;
+  Output.Normal = float3(0,0,0);
+  return Output;
+}
 \end{minted}
  
-The \href{https://gist.github.com/HatecrewJP/8898a51f45c2937ac1964ce53ce62eea}{hull shader} provides two functions. The patch-constant function, which generates the patch-constant data, 
+\noindent The hull shader provides two functions. The patch-constant function, which generates the patch-constant data, 
 and the main function, which generates the control-points for the patch.
 
-The main function of the \href{https://gist.github.com/HatecrewJP/97633439372d09aa21b89a5f4318541a}{domain shader}  calculates the new vertices.
+\noindent The main function of the domain shader calculates the new vertices.
 
-Before each main function properties must be declared within square brackets. The hull shader stage needs to know the control patch topology,
+\noindent Before each main function properties must be declared within square brackets. The hull shader stage needs to know the control patch topology,
 the target topology, how many control points can be generated by the hull shader 
 and which function is used to calculate the patch-constant data.
-
 The domain shader needs to know the control patch topology.
 
-This is the cube, after tesselation:
+\noindent This is the cube, after tesselation:
 
-\includegraphics[height= 0.2\textheight]{Assets/TesselationStage.png}
+\noindent \includegraphics[height= 0.2\textheight]{Assets/TesselationStage.png}
 
 
 \subsection{Geometry Shader Stage}
@@ -531,93 +505,98 @@ are invoked for each primitive coming from the previous stage\cite{HLSLGS}.
 The data from the input primitives can now be used to generate new vertices, which define the new primitives.
 The amount of generated vertices is not fixed, but a static upper limit must be defined.
 
-\includegraphics[height= 0.2\textheight]{Assets/GeometryShader.png}
+\noindent \includegraphics[height= 0.2\textheight]{Assets/GeometryShader.png}
 
-\begin{minted}{hlsl}
-  [maxvertexcount(9)]
-  void GSEntry(triangle GSInput InputTri[3] : SV_Position, inout TriangleStream<GSOutput> OutStream){
-    float4 MidPoint = (InputTri[0].Position + InputTri[1].Position + InputTri[2].Position)/3;
-    MidPoint.w = 1.0f;
-    float4 MidPointColor = float4((InputTri[0].Color.xyz + InputTri[1].Color.xyz + InputTri[2].Color.xyz)/3,1);
-    GSOutput Output;
-    Output.Color =  MidPointColor;
-    Output.Color.w = 1.0f;
+\href{https://gist.github.com/HatecrewJP/ac2ab08758fb5adff49a303aa3664ee2}{Geometry Shader}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
+[maxvertexcount(9)]
+void GSEntry(
+  triangle GSInput InputTri[3] : SV_Position, 
+  inout TriangleStream<GSOutput> OutStream)
+{
+  float4 MidPoint = (InputTri[0].Position + InputTri[1].Position + InputTri[2].Position)/3;
+  MidPoint.w = 1.0f;
+  float4 MidPointColor = float4((InputTri[0].Color.xyz + InputTri[1].Color.xyz + InputTri[2].Color.xyz)/3,1);
+  GSOutput Output;
+  Output.Color =  MidPointColor;
+  Output.Color.w = 1.0f;
 
-    Output.Normal = CalculateNormalFromTriangle(InputTri[0].Position,InputTri[1].Position,MidPoint);
-    Output.Color.xyz = (InputTri[0].Color.xyz + InputTri[1].Color.xyz + MidPointColor.xyz)/3.0f;
-    Output.Pos = InputTri[0].Position;
-    OutStream.Append(Output);
-    Output.Pos = InputTri[1].Position;
-    OutStream.Append(Output);
-    Output.Pos = MidPoint;
-    OutStream.Append(Output);
+  Output.Normal = CalculateNormalFromTriangle(InputTri[0].Position,InputTri[1].Position,MidPoint);
+  Output.Color.xyz = (InputTri[0].Color.xyz + InputTri[1].Color.xyz + MidPointColor.xyz)/3.0f;
+  Output.Pos = InputTri[0].Position;
+  OutStream.Append(Output);
+  Output.Pos = InputTri[1].Position;
+  OutStream.Append(Output);
+  Output.Pos = MidPoint;
+  OutStream.Append(Output);
 
-    Output.Normal = CalculateNormalFromTriangle(InputTri[1].Position,InputTri[2].Position,MidPoint);
-    Output.Color.xyz = (InputTri[1].Color.xyz + InputTri[2].Color.xyz + MidPointColor.xyz)/3.0f;
-    Output.Pos = InputTri[2].Position;
-    OutStream.Append(Output);
+  Output.Normal = CalculateNormalFromTriangle(InputTri[1].Position,InputTri[2].Position,MidPoint);
+  Output.Color.xyz = (InputTri[1].Color.xyz + InputTri[2].Color.xyz + MidPointColor.xyz)/3.0f;
+  Output.Pos = InputTri[2].Position;
+  OutStream.Append(Output);
 
-    Output.Normal = CalculateNormalFromTriangle(InputTri[2].Position,InputTri[0].Position,MidPoint);
-    Output.Color.xyz = (InputTri[2].Color.xyz + InputTri[0].Color.xyz + MidPointColor.xyz)/3.0f;
-    Output.Pos = InputTri[0].Position;
-    OutStream.Append(Output);
-    OutStream.RestartStrip();
-  }
+  Output.Normal = CalculateNormalFromTriangle(InputTri[2].Position,InputTri[0].Position,MidPoint);
+  Output.Color.xyz = (InputTri[2].Color.xyz + InputTri[0].Color.xyz + MidPointColor.xyz)/3.0f;
+  Output.Pos = InputTri[0].Position;
+  OutStream.Append(Output);
+  OutStream.RestartStrip();
+}
 \end{minted}
 
 
 
-The \href{https://gist.github.com/HatecrewJP/ac2ab08758fb5adff49a303aa3664ee2}{Geometry Shader} subdivides the cube even further.
+\noindent The Geometry Shader subdivides the cube even further.
 Each time the geometry shader is executed, the input primitves are used to calculate the triangles midpoint. This midpoint is then used to generate
 three triangles, each made by the midpoint and two vertices from the input, 
 which are then appended to the output stream as a \href{https://learn.microsoft.com/en-us/windows/win32/direct3d9/triangle-strips}{triangle strip}.
 
-The geometry shader output is passed down to the rasterizer stage.
+\noindent The geometry shader output is passed down to the rasterizer stage.
 
 \subsection{Pixel Shader Stage}
 After the rasterizer generated an image from the primitives, the pixel shader is invoked per-pixel and 
 combines textures, buffer data and per-vertex values\cite{HLSLPS} to calculate color- and optional depth-data of the pixel in the image.
 
-\includegraphics[height= 0.2\textheight]{Assets/PixelShader.png}
+\noindent \includegraphics[height= 0.2\textheight]{Assets/PixelShader.png}
 
-\begin{minted}{hlsl}
-  #define DEBUGZ 0
+\href{https://gist.github.com/HatecrewJP/c22c3aa9650dfd28dac0e9172eba6dcd}{Pixel Shader}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
+#define DEBUGZ 0
 
-  cbuffer CBuffer : register(b0){
-    float RotationAngle : packoffset(c0.x);
-    float Width  : packoffset(c0.y);
-    float Height : packoffset(c0.z);
-    float ColorR : packoffset(c1.x);
-    float ColorG : packoffset(c1.y);
-    float ColorB : packoffset(c2.x);
-    float ColorA : packoffset(c2.y);
-  };
+cbuffer CBuffer : register(b0){
+  float RotationAngle : packoffset(c0.x);
+  float Width  : packoffset(c0.y);
+  float Height : packoffset(c0.z);
+  float ColorR : packoffset(c1.x);
+  float ColorG : packoffset(c1.y);
+  float ColorB : packoffset(c2.x);
+  float ColorA : packoffset(c2.y);
+};
 
-  ps_output PSEntry(const ps_input input){
-    ps_output output;
-    output.Color = input.Color;
-    [branch]if(input.Color.r == 1.0f){
-    	output.Color = float4(ColorR,ColorG,ColorB,ColorA);
-    }
-
-
-    [flatten]if(output.Color.r == 0.0f){
-    	output.Color = float4(ColorR,ColorG,ColorB,ColorA);
-    }
-
-  #if DEBUGZ
-    if(input.vPosition.z > 0){
-    	output.Color = float4(1,0,0,1);
-    }
-  #endif
-    return output;
+ps_output PSEntry(const ps_input input){
+  ps_output output;
+  output.Color = input.Color;
+  [branch]if(input.Color.r == 1.0f){
+  	output.Color = float4(ColorR,ColorG,ColorB,ColorA);
   }
+
+
+  [flatten]if(output.Color.r == 0.0f){
+  	output.Color = float4(ColorR,ColorG,ColorB,ColorA);
+  }
+
+#if DEBUGZ
+  if(input.vPosition.z > 0){
+  	output.Color = float4(1,0,0,1);
+  }
+#endif
+  return output;
+}
 \end{minted}
 
-The \href{https://gist.github.com/HatecrewJP/c22c3aa9650dfd28dac0e9172eba6dcd}{pixel shader} animates all pixels, where the red channel is equal to 1 or 0;
+\noindent The pixel shader animates all pixels, where the red channel is equal to 1 or 0;
 The color of the animation comes from a constant buffer. The cpu is responsible for updating the color. 
 
-Notice that the variables in the constant buffer can be used like global variables.
+\noindent Notice that the variables in the constant buffer can be used like global variables.
 
 
 \subsection{Output Merger Stage}
@@ -632,31 +611,33 @@ is the color coming from the pixel shader.
 Direct3D11 introduced computer shaders. These shaders are general purpose shaders, which are no part of the graphics pipeline.
 Instead it is possible abuse the parallel design of the gpu to perform computations on the gpu, which aren't necessarily graphics related.
 
-Even though compute shaders are independent from the graphics pipeline, both can be used together.
+\noindent Even though compute shaders are independent from the graphics pipeline, both can be used together.
 
-\includegraphics[height= 0.2\textheight]{Assets/ComputeShader.png}
+\noindent \includegraphics[height= 0.2\textheight]{Assets/ComputeShader.png}
 
-Compute shaders can be used for post-processing effects. 
+\noindent Compute shaders can be used for post-processing effects. 
 The example uses a compute shader that scales the red channel down for every pixel in the image, excluding all pixels with an rgba value of 0xffffffff.
 
-\begin{minted}{hlsl}
-  RWTexture2D <unorm float4> SwapChainImageCopy : register(u0);
+\href{https://gist.github.com/HatecrewJP/90dc57625a3fe2f78e667d3e2613297a}{ComputerShader}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
+RWTexture2D <unorm float4> SwapChainImageCopy : register(u0);
 
-  [numthreads(1,1,1)]
-  void CSEntry(uint3 GroupID: SV_GroupID){
-    uint2 Coordinate = uint2(GroupID.x,GroupID.y);
+[numthreads(1,1,1)]
+void CSEntry(uint3 GroupID: SV_GroupID){
+  uint2 Coordinate = uint2(GroupID.x,GroupID.y);
 
-    float4 Color = SwapChainImageCopy[Coordinate];
-    bool ColorIsWhite = (Color.x+Color.y+Color.z+Color.w) == 4;
+  float4 Color = SwapChainImageCopy[Coordinate];
+  bool ColorIsWhite = (Color.x+Color.y+Color.z+Color.w) == 4;
 
-    [flatten]if(!ColorIsWhite){
-    	Color.r *= 0.7f;
-    }
-    SwapChainImageCopy[Coordinate] = Color;
+  [flatten]if(!ColorIsWhite){
+  	Color.r *= 0.7f;
   }
+  SwapChainImageCopy[Coordinate] = Color;
+}
 \end{minted}
 
-\href{https://gist.github.com/HatecrewJP/90dc57625a3fe2f78e667d3e2613297a}{Compute shaders} need to specify how many threads 
+
+\noindent Compute shaders need to specify how many threads 
 are spawned when the shader is invoked. This is done by providing three values, x, y and z, in the \textbf{numthreads} property\cite{HLSLCreateCS}.
 
 \subsection{Final Image}
