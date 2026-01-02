@@ -624,9 +624,7 @@ internal void UpdateCSTexture(UINT Width, UINT Height){
 }
 
 internal void CycleShaderColors(ShaderColor *CurrentShaderColor){
-
 	*CurrentShaderColor = ShaderColor((*CurrentShaderColor + 1) % SHADER_COLOR_COUNT);
-	
 }
 
 
