@@ -44,7 +44,7 @@ A list of concepts that are not explained can be found at the end of this docume
 \section{History of HLSL}
 When gpu's were introduced, each gpu required dedicated code. In 2002\cite{Direct3DGettingStarted}, Microsoft released DirectX 9.0 and with it the High Level Shader Language\cite{DirectX2003}.\@
 The goal was to provide a flexible and developer-friendly environment that abstracts the different gpu implementations\cite{DirectX2003}.
-HLSL is based on c programming language\cite{DirectX2003} and adds additional concepts designed for gpu programming. 
+HLSL is based on the c programming language\cite{DirectX2003} and adds additional concepts designed for gpu programming. 
 The language implements multiple versions of shader models, each being an extension of the previous version\cite{HLSLShaderModel}.
 The latest shader model is the 6th version, which is used by Direct3D 12. 
 
@@ -68,7 +68,7 @@ The main data types are:
 \end{itemize}
 
 \subsection{Vector}
-Vector's are variables that use up to 4 components\cite{HLSLVector}. The type can be any of the scalar data types. A vector can be declared in two ways:
+Vectors are variables that use up to 4 components\cite{HLSLVector}. The type can be any of the scalar data types. A vector can be declared in two ways:
 
 Declaration with a template: \colorbox{bg}{\textbf{vector}<Type, Components = [1,4]>}
 
@@ -236,11 +236,11 @@ If there are multiple variables with the same semantic meaning, an Integer can b
 \end{minted}
 
 \section{Flow Control}
-Since HLSL is a language for GPU's, and GPU's are made for Single Instruction Multiple Data (SIMD) parallel execution,
+Since HLSL is a language for GPUs, and GPUs are made for Single Instruction Multiple Data (SIMD) parallel execution,
 flow control is different to cpu flow control.
 Branches on the cpu are simple, because comparisons operate on a single value.
 Therefore the cpu is able to use the result to choose which branch to take.
-Since GPU's are SIMD and operate on multiple values, branching can no longer be decided by a single value,
+Since GPUs are SIMD and operate on multiple values, branching can no longer be decided by a single value,
 since different branches would require different instructions, which is does not work with SIMD.\@\cite{NvidiaFlowControl}
 Loops have to wait, until all loop conditions are equal to 0.
 HLSL uses c's flow control syntax, but adds additional options to it.
