@@ -1,5 +1,4 @@
 #define DEBUGZ 0
-
 struct ps_input
 {
 	float4 vPosition : SV_Position;

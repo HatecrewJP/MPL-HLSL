@@ -21,6 +21,15 @@ void GSEntry(triangle GSInput InputTri[3] : SV_Position, inout TriangleStream<GS
 	GSOutput output;
 	output.Color.xyz = (InputTri[0].Color.xyz + InputTri[1].Color.xyz + InputTri[2].Color.xyz)/3.0f;
 	output.Color.w = 1.0f;
+	bool RChannelPrecise = InputTri[0].Pos.r>0.999 && InputTri[0].Pos.r!=1.0f;
+	bool GChannelPrecise = InputTri[1].Pos.r>0.999 && InputTri[1].Pos.r!=1.0f;
+	bool BChannelPrecise = InputTri[1].Pos.r>0.999 && InputTri[2].Pos.r!=1.0f;
+	
+	if(!(RChannelPrecise&&GChannelPrecise&&BChannelPrecise)){
+	output.Color = float4(0.64f,0.64f,0.64f,0.64f);
+	}
+	
+	
 	output.Normal = FaceNormal;
 	output.Pos = InputTri[0].Pos;
 	OutStream.Append(output);

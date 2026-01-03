@@ -23,7 +23,6 @@ struct HsOutput{
 
 ConstantOutputType PatchConstantFunction(InputPatch<HsInput,3> inputPatch, uint PatchID : SV_PrimitiveID){
 	ConstantOutputType Output;
-	
 	Output.Edges[0] = 1;
 	Output.Edges[1] = 1;
 	Output.Edges[2] = 1;
@@ -32,6 +31,7 @@ ConstantOutputType PatchConstantFunction(InputPatch<HsInput,3> inputPatch, uint 
 	
 	return Output;
 }
+
 [domain("tri")]
 [partitioning("pow2")]
 [outputtopology("triangle_cw")]
@@ -41,6 +41,9 @@ ConstantOutputType PatchConstantFunction(InputPatch<HsInput,3> inputPatch, uint 
 HsOutput HSEntry(InputPatch<HsInput,3>patch, uint PointID : SV_OutputControlPointID, uint PatchID : SV_PrimitiveID){
 	HsOutput Output;
 	Output.Color = patch[PointID].Color;
+	if(patch[PointID].Color.r>=0.999f && patch[PointID].Color.r != 1.0f){
+		Output.Color = float4(0.64f,0.64f,0.64f,0.64f);
+	}
 	Output.Position = patch[PointID].Position;
 	
 	return Output;

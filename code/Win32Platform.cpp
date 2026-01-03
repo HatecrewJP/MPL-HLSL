@@ -805,8 +805,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			//Rasterizer
 			D3D11_RASTERIZER_DESC RasterizerDesc1;
-			RasterizerDesc1.FillMode = D3D11_FILL_WIREFRAME;
-			RasterizerDesc1.CullMode = D3D11_CULL_NONE;
+			RasterizerDesc1.FillMode = D3D11_FILL_SOLID;
+			RasterizerDesc1.CullMode = D3D11_CULL_BACK;
 			RasterizerDesc1.FrontCounterClockwise = FALSE;
 			RasterizerDesc1.DepthBias = 0;
 			RasterizerDesc1.DepthBiasClamp = 1.0f;
@@ -821,7 +821,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			ASSERT(RasterizerState1);
 
 			D3D11_RASTERIZER_DESC RasterizerDesc2;
-			RasterizerDesc2.FillMode = D3D11_FILL_SOLID;
+			RasterizerDesc2.FillMode = D3D11_FILL_WIREFRAME;
 			RasterizerDesc2.CullMode = D3D11_CULL_BACK;
 			RasterizerDesc2.FrontCounterClockwise = FALSE;
 			RasterizerDesc2.DepthBias = 0;
@@ -1081,13 +1081,14 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					(UINT*)&Zero,
 					GlobalIndexBufferArray[0],DXGI_FORMAT_R32_UINT,ArrayCount(CubeIndices),
 					VSPassTroughInputLayout,
-					D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST,
+					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 					VSCube,
-					&ConstantBuffer,1,
+					&ConstantBuffer,1,/*
 					GlobalHullShaderArray[0],
 					GlobalDomainShaderArray[0],
-					GlobalGeometryShaderArray[0],
-					RasterizerState2,
+					GlobalGeometryShaderArray[0],*/
+					nullptr,nullptr,nullptr,
+					RasterizerState1,
 					&GlobalPixelShaderArray[1],
 					nullptr,0,
 					&GlobalRenderTargetView, 1,

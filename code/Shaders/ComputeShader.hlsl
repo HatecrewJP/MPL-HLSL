@@ -5,10 +5,7 @@ void CSEntry(uint3 GroupID: SV_GroupID){
 	uint2 Coordinate = uint2(GroupID.x,GroupID.y);
 	
 	float4 Color = SwapChainImageCopy[Coordinate];
-	bool ColorIsWhite = (Color.x+Color.y+Color.z+Color.w) == 4;
+	Color.r *= 0.7f;
 	
-	[flatten]if(!ColorIsWhite){
-		Color.r *= 0.7f;
-	}
 	SwapChainImageCopy[Coordinate] = Color;
 }

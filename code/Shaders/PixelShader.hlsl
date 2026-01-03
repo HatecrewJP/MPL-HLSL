@@ -1,5 +1,5 @@
 #define DEBUGZ 0
-
+#define IMPRECISIONFIX 0
 cbuffer CBuffer : register(b0){
 	float RotationAngle : packoffset(c0.x);
 	float Width  : packoffset(c0.y);
@@ -12,7 +12,7 @@ cbuffer CBuffer : register(b0){
 
 struct ps_input{
 	float4 vPosition : SV_Position;
- 	float4 Color : COLOR;
+ 	nointerpolation float4 Color : COLOR;
 	float3 Normal : NORMAL;
 };
 
@@ -23,19 +23,20 @@ struct ps_output{
 ps_output PSEntry(const ps_input input){
 	ps_output output;
 	output.Color = input.Color;
+	
+#if IMPRECISIONFIX
+	[branch]if(input.Color.r >= 0.999f){
+		output.Color = float4(ColorR,ColorG,ColorB,ColorA);
+	}
+#else
 	[branch]if(input.Color.r == 1.0f){
 		output.Color = float4(ColorR,ColorG,ColorB,ColorA);
 	}
-	
+#endif
 	
 	[flatten]if(input.Color.r == 0.0f){
 		output.Color = float4(ColorR,ColorG,ColorB,ColorA);
 	}
 	
-#if DEBUGZ
-	if(input.vPosition.z > 0){
-		output.Color = float4(1,0,0,1);
-	}
-#endif
 	return output;
 }
