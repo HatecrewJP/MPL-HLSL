@@ -624,9 +624,7 @@ internal void UpdateCSTexture(UINT Width, UINT Height){
 }
 
 internal void CycleShaderColors(ShaderColor *CurrentShaderColor){
-
 	*CurrentShaderColor = ShaderColor((*CurrentShaderColor + 1) % SHADER_COLOR_COUNT);
-	
 }
 
 
@@ -752,7 +750,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				
 			#define VSPassTrough GlobalVertexShaderArray[0]
 			#define VSPassTroughInputLayout VSInputLayoutArray[0]
-			ShaderCode VSCode = Win32CompileShaderFromFile(L"VertexShaderPassThrough.hlsl","VSEntry","vs_5_0");
+			ShaderCode VSCode = Win32CompileShaderFromFile(L"Shaders/VertexShaderPassThrough.hlsl","VSEntry","vs_5_0");
 			ASSERT(VSCode.Code);
 			VSPassTrough = Win32CreateVertexShader(GlobalDevice,VSCode.Code,VSCode.Size);
 				ASSERT(VSPassTrough);
@@ -762,7 +760,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				VSCode.Code,
 				VSCode.Size);
 				
-			VSCode = Win32CompileShaderFromFile(L"VertexShaderCube.hlsl","VSEntry","vs_5_0");
+			VSCode = Win32CompileShaderFromFile(L"Shaders/VertexShaderCube.hlsl","VSEntry","vs_5_0");
 			ASSERT(VSCode.Code);
 			#define VSCube GlobalVertexShaderArray[1]
 			#define VSCubeInputLayout VSInputLayoutArray[1]
@@ -776,31 +774,31 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				VSCode.Size);	
 			
 			//Adding PixelShaders
-			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"PixelShaderPassThrough.hlsl","PSEntry","ps_5_0"));
-			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"PixelShader.hlsl","PSEntry","ps_5_0"));
+			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"Shaders/PixelShaderPassThrough.hlsl","PSEntry","ps_5_0"));
+			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"Shaders/PixelShader.hlsl","PSEntry","ps_5_0"));
 			
 			
 			
 			
 			//HUllShader
-			ShaderCode HSCode = Win32CompileShaderFromFile(L"HullShader.hlsl","HSEntry","hs_5_0");
+			ShaderCode HSCode = Win32CompileShaderFromFile(L"Shaders/HullShader.hlsl","HSEntry","hs_5_0");
 			ASSERT(HSCode.Code);
 			res = GlobalDevice->CreateHullShader(HSCode.Code,HSCode.Size,nullptr,&GlobalHullShaderArray[0]);
 			ASSERT(res==S_OK);
 			
 			//DomainShader
-			ShaderCode DSCode = Win32CompileShaderFromFile(L"DomainShader.hlsl","DSEntry","ds_5_0");
+			ShaderCode DSCode = Win32CompileShaderFromFile(L"Shaders/DomainShader.hlsl","DSEntry","ds_5_0");
 			ASSERT(DSCode.Code);
 			res = GlobalDevice->CreateDomainShader(DSCode.Code,DSCode.Size,nullptr,&GlobalDomainShaderArray[0]);
 			ASSERT(res==S_OK);
 			
 			//GeometryShader
-			ShaderCode GSCode = Win32CompileShaderFromFile(L"GeometryShaderSubdiv.hlsl","GSEntry","gs_5_0");
+			ShaderCode GSCode = Win32CompileShaderFromFile(L"Shaders/GeometryShaderSubdiv.hlsl","GSEntry","gs_5_0");
 			ASSERT(GSCode.Code);
 			res = GlobalDevice->CreateGeometryShader(GSCode.Code,GSCode.Size,nullptr,&GlobalGeometryShaderArray[0]);
 			ASSERT(res==S_OK);
 			//GeometryShader
-			GSCode = Win32CompileShaderFromFile(L"GeometryShaderPassThrough.hlsl","GSEntry","gs_5_0");
+			GSCode = Win32CompileShaderFromFile(L"Shaders/GeometryShaderPassThrough.hlsl","GSEntry","gs_5_0");
 			ASSERT(GSCode.Code);
 			res = GlobalDevice->CreateGeometryShader(GSCode.Code,GSCode.Size,nullptr,&GlobalGeometryShaderArray[1]);
 			ASSERT(res==S_OK);
@@ -1099,7 +1097,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			
 			//ComputeShader
-			ShaderCode CSCode = Win32CompileShaderFromFile(L"ComputeShader.hlsl","CSEntry","cs_5_0");
+			ShaderCode CSCode = Win32CompileShaderFromFile(L"Shaders/ComputeShader.hlsl","CSEntry","cs_5_0");
 			ASSERT(CSCode.Code);
 			res = GlobalDevice->CreateComputeShader(CSCode.Code,CSCode.Size,nullptr,&GlobalComputeShaderArray[0]);
 			ASSERT(res==S_OK);

@@ -3,7 +3,7 @@
 //Windows functions
 LRESULT Wndproc(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam);
 internal void Win32ProcessError(DWORD Error);
-internal void MessageLoop(ID3D11Device* Device);
+internal void MessageLoop(ID3D11Device* Device, float *ConstantBuffer);
 
 //DXGI Functions
 internal int Win32GetIDXGIInterfacesFromD3DDevice(
@@ -96,4 +96,4 @@ internal void ResizeSwapChainBuffers(UINT NewWidth, UINT NewHeight);
 
 internal void UpdateCSTexture(UINT Width, UINT Height);
 
-
+internal void CycleShaderColors(ShaderColor *CurrentShaderColor);
