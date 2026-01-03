@@ -28,7 +28,7 @@ ps_output PSEntry(const ps_input input){
 	}
 	
 	
-	[flatten]if(output.Color.r == 0.0f){
+	[flatten]if(input.Color.r == 0.0f){
 		output.Color = float4(ColorR,ColorG,ColorB,ColorA);
 	}
 	

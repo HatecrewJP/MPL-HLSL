@@ -60,14 +60,14 @@ vs_output VSEntry(const vs_input input)
 
 	float4 Input =  float4(input.vPosition,1);
 	
-
 	float4x4 OrthographicProjectionMatrix = {
 		1.0f,0.0f,0.0f,0.0f,
 		0.0f,1.0f,0.0f,0.0f,
-		0.0f,0.0f,-1.0f,0.0f,
+		0.0f,0.0f,(2.0f/3.0f),(3.0f/2.0f),
 		0.0f,0.0f,0.0f,1.0f};
+		
 	
-	float4 Scaling = {0.5f,0.5f,0.5f,1};
+	float4 Scaling = {0.3f,0.3f,0.3f,1};
 	
 	
 	Input *= Scaling;
@@ -75,7 +75,9 @@ vs_output VSEntry(const vs_input input)
 	Input = RotationPitch(Input,RotationAngle);
 	Input = RotationRoll(Input,0);
 	Input.x /= (Width/Height);
-	output.vPosition = mul(Input,OrthographicProjectionMatrix);
+	Input = mul(Input,OrthographicProjectionMatrix);
+	
+	output.vPosition = Input;
 	output.Color =  input.Color;
 	output.Normal = float3(0,0,0);
 	return output;

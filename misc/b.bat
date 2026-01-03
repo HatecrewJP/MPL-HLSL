@@ -4,7 +4,7 @@ set SD=V:\code\
 REM BD: BuildDirectory
 set BD="V:\build\\"
 set DisabledWarnings= -wd4100 -wd4189 -wd4706 -wd4530
-set CompilerParams= -nologo -Od -FC -MT -W4 -WX -Zi  %DisabledWarnings% 
+set CompilerParams= -nologo -Od -FC -MT -W4 -WX -Zi -FA %DisabledWarnings% 
 set Libraries=User32.lib D3D11.lib D3DCompiler.lib
 set LinkParams=%Libraries%
 pushd V:\

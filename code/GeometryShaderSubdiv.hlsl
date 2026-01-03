@@ -19,7 +19,6 @@ float3 CalculateNormalFromTriangle(float4 In1, float4 In2, float4 In3){
 [maxvertexcount(9)]
 void GSEntry(triangle GSInput InputTri[3] : SV_Position, inout TriangleStream<GSOutput> OutStream){
 	float4 MidPoint = (InputTri[0].Position + InputTri[1].Position + InputTri[2].Position)/3;
-	MidPoint.w = 1.0f;
 	float4 MidPointColor = float4((InputTri[0].Color.xyz + InputTri[1].Color.xyz + InputTri[2].Color.xyz)/3,1);
 	GSOutput Output;
 	Output.Color =  MidPointColor;

@@ -704,8 +704,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				0,2,3,
 				0,3,1,
 				//Back Face
-				5,6,4,
-				5,7,6,
+				7,6,4,
+				7,4,5,
 				//Left Face
 				4,6,2,
 				4,2,0,
@@ -716,8 +716,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				2,6,7,
 				2,7,3,
 				//Bottom Face
-				0,4,5,
-				0,5,1
+				0,1,4,
+				4,1,5
 			};
 			CreateVBForIndexedGeometry(
 				CubeVertices,
@@ -823,8 +823,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			ASSERT(RasterizerState1);
 
 			D3D11_RASTERIZER_DESC RasterizerDesc2;
-			RasterizerDesc2.FillMode = D3D11_FILL_WIREFRAME;
-			RasterizerDesc2.CullMode = D3D11_CULL_NONE;
+			RasterizerDesc2.FillMode = D3D11_FILL_SOLID;
+			RasterizerDesc2.CullMode = D3D11_CULL_BACK;
 			RasterizerDesc2.FrontCounterClockwise = FALSE;
 			RasterizerDesc2.DepthBias = 0;
 			RasterizerDesc2.DepthBiasClamp = 1.0f;
