@@ -1081,13 +1081,13 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					(UINT*)&Zero,
 					GlobalIndexBufferArray[0],DXGI_FORMAT_R32_UINT,ArrayCount(CubeIndices),
 					VSPassTroughInputLayout,
-					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+					D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST,
 					VSCube,
-					&ConstantBuffer,1,/*
+					&ConstantBuffer,1,
 					GlobalHullShaderArray[0],
 					GlobalDomainShaderArray[0],
-					GlobalGeometryShaderArray[0],*/
-					nullptr,nullptr,nullptr,
+					GlobalGeometryShaderArray[0],
+					/*nullptr,nullptr,nullptr,*/
 					RasterizerState1,
 					&GlobalPixelShaderArray[1],
 					nullptr,0,

@@ -79,10 +79,10 @@ vs_output VSEntry(const vs_input input)
 	
 	output.vPosition = Input;
 	output.Color =  input.Color;
-	
+	/*
 	if(input.Color.r>=0.999f && input.Color.r != 1.0f){
 		output.Color = float4(0.64f,0.64f,0.64f,0.64f);
-	}
+	}*/
 	
 	output.Normal = float3(0,0,0);
 	return output;

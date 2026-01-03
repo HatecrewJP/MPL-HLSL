@@ -24,13 +24,13 @@ void GSEntry(triangle GSInput InputTri[3] : SV_Position, inout TriangleStream<GS
 	
 	float4 MidPoint = (InputTri[0].Position + InputTri[1].Position + InputTri[2].Position)/3;
 	float4 MidPointColor = float4((InputTri[0].Color.xyz + InputTri[1].Color.xyz + InputTri[2].Color.xyz)/3,1);
-	
+	/*
 	bool Tri1Precise = InputTri[0].Color.r>0.999 && InputTri[0].Color.r!=1.0f;
 	bool Tri2Precise = InputTri[1].Color.r>0.999 && InputTri[1].Color.r!=1.0f;
 	bool Tri3Precise = InputTri[2].Color.r>0.999 && InputTri[2].Color.r!=1.0f;
 	if(!(Tri1Precise && Tri2Precise && Tri3Precise)){
 	MidPointColor = float4(0.64f,0.64f,0.64f,0.64f);
-	}
+	}*/
 	
 	GSOutput Output;
 	Output.Color =  MidPointColor;
