@@ -1,4 +1,4 @@
-
+#define _CRT_SECURE_NO_WARNINGS
 
 #define ASSERT(x) if(!(x)) *(char*)0=0;
 
@@ -22,9 +22,9 @@
 #include "Structs.h"
 #include "Win32Platform.h"
 
+#include "BMP.c"
 
-
-
+global_variable bool VsyncActive = 1;
 
 global_variable bool GlobalRunning = false;
 global_variable bool GlobalAnimationIsActive = false;
@@ -189,7 +189,9 @@ internal void MessageLoop(ID3D11Device* Device, float *ConstantBuffer){
 					GlobalActiveCSState = &GlobalComputeShaderStateArray[0];
 					ResetModeAndOffset();
 				}
-				
+				else if(VKCode == 'P'){
+					VsyncActive ^=1;
+				}
 				else if(VKCode == 'T'){
 					PipelineStateOffset = (PipelineStateOffset+3)%6;
 					
@@ -630,6 +632,9 @@ internal void CycleShaderColors(ShaderColor *CurrentShaderColor){
 
 int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmdshow){
 	//Windows Window
+	
+	int *PixelArrayFromFile = (int*)ParseBMPFile("Cube.bmp");
+	
 	WNDCLASSEXA WindowClass;
 	WindowClass.cbSize = sizeof(WNDCLASSEXA);
 	WindowClass.style = CS_HREDRAW|CS_OWNDC|CS_VREDRAW;
@@ -1087,8 +1092,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					GlobalHullShaderArray[0],
 					GlobalDomainShaderArray[0],
 					GlobalGeometryShaderArray[0],
-					/*nullptr,nullptr,nullptr,*/
-					RasterizerState1,
+					RasterizerState2,
 					&GlobalPixelShaderArray[1],
 					nullptr,0,
 					&GlobalRenderTargetView, 1,
@@ -1174,7 +1178,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					GlobalDeviceContext->CopyResource(GlobalFrameBuffer,GlobalCSShaderResource);
 				}
 				
-				GlobalSwapChain->Present(1, 0);
+				GlobalSwapChain->Present(VsyncActive, 0);
 				
 				if (GlobalAnimationIsActive) {
 					AnimationCount = (AnimationCount + 1) % (60);
