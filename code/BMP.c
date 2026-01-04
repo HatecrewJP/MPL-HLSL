@@ -53,7 +53,7 @@ void* ParseBMPFile(char *Filename){
 	BitMapInfoHeader40 ih;
 	ASSERT(ImageBuffer != nullptr);
 	CharsRead = fread(ImageBuffer,1,fh.BMPSize,f);
-	memcpy(&ih,ImageBuffer,sizeof(ih));
+	memcpy(&ih,ImageBuffer,sizeof(ih)); 	
 	
 	ASSERT(ih.CompressionMethod == 0);
 
@@ -63,16 +63,23 @@ void* ParseBMPFile(char *Filename){
 	
 	
 	int PixelCount = ih.ImageSize / ih.BitsPerPixel * 8;
-	void *PixelArray = malloc(PixelCount * sizeof(int));
+	size_t PixelArraySize = (PixelCount + 4 ) * sizeof(int);
+	void *PixelArray = malloc(PixelArraySize);
 	memset(PixelArray, 0, PixelCount * sizeof(int));
-
+	
+	int* PixelArrayAlias = (int*) PixelArray;
+	PixelArrayAlias[0] = (int)PixelArraySize;
+	PixelArrayAlias[1] = ih.Width;
+	PixelArrayAlias[2] = ih.Height;
+	PixelArrayAlias+=4;
 	for (int i = 0; i < PixelCount; i++) {
-		memcpy(((int*)PixelArray)+i, (data+i*3), 3);
+		memcpy(((int*)PixelArrayAlias)+i, (data+i*3), 3);
 	}
 	
-	BGRXtoRGBA((int*)PixelArray,PixelCount);
+	BGRXtoRGBA((int*)PixelArrayAlias,PixelCount);
 	
 	free(ImageBuffer);
 	free(data);
+	fclose(f);
 	return PixelArray;
 }	
