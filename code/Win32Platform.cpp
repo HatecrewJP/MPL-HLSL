@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
+
 
 #define ASSERT(x) if(!(x)) *(char*)0=0;
 
@@ -49,7 +49,7 @@ global_variable ID3D11DeviceContext 	*GlobalDeviceContext 	= nullptr;
 global_variable ID3D11RenderTargetView 	*GlobalRenderTargetView = nullptr;
 global_variable ID3D11Texture2D			*GlobalFrameBuffer 		= nullptr;
 
-global_variable UINT GlobalActiveIndexCount;
+global_variable UINT GlobalActiveIndexCount = 0;
 global_variable UINT GlobalStrides[1];
 global_variable UINT GlobalOffsets[1];
 
@@ -77,7 +77,6 @@ global_variable ComputeShaderState GlobalComputeShaderStateArray[32];
 
 global_variable ID3D11Texture2D *GlobalCSShaderResource = nullptr;
 global_variable ID3D11UnorderedAccessView *GlobalUAVArray[32];
-ID3D11Texture2D *GlobalUAVTexture = nullptr;
 
 global_variable GraphicsPipelineState NILGraphicsPipelineState = {};
 global_variable ComputeShaderState NILComputeShaderState = {};
@@ -754,7 +753,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				
 			#define VSPassTrough GlobalVertexShaderArray[0]
 			#define VSPassTroughInputLayout VSInputLayoutArray[0]
-			ShaderCode VSCode = Win32CompileShaderFromFile(L"Shaders/VertexShaderPassThrough.hlsl","VSEntry","vs_5_0");
+			ShaderCode VSCode = Win32CompileShaderFromFile(L"VertexShaderPassThrough.hlsl","VSEntry","vs_5_0");
 			ASSERT(VSCode.Code);
 			VSPassTrough = Win32CreateVertexShader(GlobalDevice,VSCode.Code,VSCode.Size);
 				ASSERT(VSPassTrough);
@@ -764,7 +763,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				VSCode.Code,
 				VSCode.Size);
 				
-			VSCode = Win32CompileShaderFromFile(L"Shaders/VertexShaderCube.hlsl","VSEntry","vs_5_0");
+			VSCode = Win32CompileShaderFromFile(L"VertexShaderCube.hlsl","VSEntry","vs_5_0");
 			ASSERT(VSCode.Code);
 			#define VSCube GlobalVertexShaderArray[1]
 			#define VSCubeInputLayout VSInputLayoutArray[1]
@@ -778,31 +777,31 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				VSCode.Size);	
 			
 			//Adding PixelShaders
-			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"Shaders/PixelShaderPassThrough.hlsl","PSEntry","ps_5_0"));
-			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"Shaders/PixelShader.hlsl","PSEntry","ps_5_0"));
+			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"PixelShaderPassThrough.hlsl","PSEntry","ps_5_0"));
+			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"PixelShader.hlsl","PSEntry","ps_5_0"));
 			
 			
 			
 			
 			//HUllShader
-			ShaderCode HSCode = Win32CompileShaderFromFile(L"Shaders/HullShader.hlsl","HSEntry","hs_5_0");
+			ShaderCode HSCode = Win32CompileShaderFromFile(L"HullShader.hlsl","HSEntry","hs_5_0");
 			ASSERT(HSCode.Code);
 			res = GlobalDevice->CreateHullShader(HSCode.Code,HSCode.Size,nullptr,&GlobalHullShaderArray[0]);
 			ASSERT(res==S_OK);
 			
 			//DomainShader
-			ShaderCode DSCode = Win32CompileShaderFromFile(L"Shaders/DomainShader.hlsl","DSEntry","ds_5_0");
+			ShaderCode DSCode = Win32CompileShaderFromFile(L"DomainShader.hlsl","DSEntry","ds_5_0");
 			ASSERT(DSCode.Code);
 			res = GlobalDevice->CreateDomainShader(DSCode.Code,DSCode.Size,nullptr,&GlobalDomainShaderArray[0]);
 			ASSERT(res==S_OK);
 			
 			//GeometryShader
-			ShaderCode GSCode = Win32CompileShaderFromFile(L"Shaders/GeometryShaderSubdiv.hlsl","GSEntry","gs_5_0");
+			ShaderCode GSCode = Win32CompileShaderFromFile(L"GeometryShaderCube.hlsl","GSEntry","gs_5_0");
 			ASSERT(GSCode.Code);
 			res = GlobalDevice->CreateGeometryShader(GSCode.Code,GSCode.Size,nullptr,&GlobalGeometryShaderArray[0]);
 			ASSERT(res==S_OK);
 			//GeometryShader
-			GSCode = Win32CompileShaderFromFile(L"Shaders/GeometryShaderPassThrough.hlsl","GSEntry","gs_5_0");
+			GSCode = Win32CompileShaderFromFile(L"GeometryShaderPassThrough.hlsl","GSEntry","gs_5_0");
 			ASSERT(GSCode.Code);
 			res = GlobalDevice->CreateGeometryShader(GSCode.Code,GSCode.Size,nullptr,&GlobalGeometryShaderArray[1]);
 			ASSERT(res==S_OK);
@@ -891,7 +890,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					nullptr,
 					nullptr,
 					nullptr,
-					nullptr,
+					RasterizerState2,
 					&GlobalPixelShaderArray[0],
 					nullptr,0,
 					&GlobalRenderTargetView, 1,
@@ -997,31 +996,13 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					GlobalHullShaderArray[0],
 					GlobalDomainShaderArray[0],
 					nullptr,
-					RasterizerState1,
+					RasterizerState2,
 					&GlobalPixelShaderArray[1],
 					&ConstantBuffer,1,
 					&GlobalRenderTargetView, 1,
 					"6:TriGeometryTesselationEnabled"));
 			
-			//Example
-			AddPipelineStateToArray(BuildPipelineState(
-					&GlobalVertexBufferArray[0],1,
-					(UINT*)&GlobalIndexedGeometryArray[0].VertexSize,
-					(UINT*)&Zero,
-					GlobalIndexBufferArray[0],DXGI_FORMAT_R32_UINT,ArrayCount(CubeIndices),
-					VSPassTroughInputLayout,
-					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
-					VSPassTrough,
-					&ConstantBuffer,1,
-					nullptr,
-					nullptr,
-					nullptr,
-					RasterizerState2,
-					&GlobalPixelShaderArray[0],
-					nullptr,0,
-					&GlobalRenderTargetView, 1,
-					"7:RasterizerSet"));	
-			
+			//Example	
 			AddPipelineStateToArray(BuildPipelineState(
 					&GlobalVertexBufferArray[0],1,
 					(UINT*)&GlobalIndexedGeometryArray[0].VertexSize,
@@ -1038,7 +1019,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					&GlobalPixelShaderArray[0],
 					nullptr,0,
 					&GlobalRenderTargetView, 1,
-					"8:VSActive"));
+					"7:VSActive"));
 					
 				
 					
@@ -1058,7 +1039,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					&GlobalPixelShaderArray[0],
 					nullptr,0,
 					&GlobalRenderTargetView, 1,
-					"9:Tesselation"));
+					"8:Tesselation"));
 			
 			AddPipelineStateToArray(BuildPipelineState(
 					&GlobalVertexBufferArray[0],1,
@@ -1076,8 +1057,25 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					&GlobalPixelShaderArray[0],
 					nullptr,0,
 					&GlobalRenderTargetView, 1,
-					"10:GeometryShader"));
-					
+					"9:GeometryShader"));
+			
+			AddPipelineStateToArray(BuildPipelineState(
+					&GlobalVertexBufferArray[0],1,
+					(UINT*)&GlobalIndexedGeometryArray[0].VertexSize,
+					(UINT*)&Zero,
+					GlobalIndexBufferArray[0],DXGI_FORMAT_R32_UINT,ArrayCount(CubeIndices),
+					VSPassTroughInputLayout,
+					D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST,
+					VSCube,
+					&ConstantBuffer,1,
+					GlobalHullShaderArray[0],
+					GlobalDomainShaderArray[0],
+					GlobalGeometryShaderArray[0],
+					RasterizerState1,
+					&GlobalPixelShaderArray[0],
+					nullptr,0,
+					&GlobalRenderTargetView, 1,
+					"10:RasterizerSet"));
 					
 			AddPipelineStateToArray(BuildPipelineState(
 					&GlobalVertexBufferArray[0],1,
@@ -1091,7 +1089,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					GlobalHullShaderArray[0],
 					GlobalDomainShaderArray[0],
 					GlobalGeometryShaderArray[0],
-					RasterizerState2,
+					RasterizerState1,
 					&GlobalPixelShaderArray[1],
 					nullptr,0,
 					&GlobalRenderTargetView, 1,
@@ -1103,15 +1101,13 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			
 			//ComputeShader
-			ShaderCode CSCode = Win32CompileShaderFromFile(L"Shaders/ComputeShader.hlsl","CSEntry","cs_5_0");
+			ShaderCode CSCode = Win32CompileShaderFromFile(L"ComputeShader.hlsl","CSEntry","cs_5_0");
 			ASSERT(CSCode.Code);
 			res = GlobalDevice->CreateComputeShader(CSCode.Code,CSCode.Size,nullptr,&GlobalComputeShaderArray[0]);
 			ASSERT(res==S_OK);
 			UpdateCSTexture(Width,Height);
 			
-			
-			GlobalComputeShaderStateArray[0].ShaderResourceViewArray = &GlobalCSShaderResourceView;
-			GlobalComputeShaderStateArray[0].ShaderResourceViewCount = 0;
+		
 			GlobalComputeShaderStateArray[0].UnorderedAccessViewArray = GlobalUAVArray;
 			GlobalComputeShaderStateArray[0].UnorderedAccessViewCount = 1;
 			GlobalComputeShaderStateArray[0].ComputeShader = GlobalComputeShaderArray[0];

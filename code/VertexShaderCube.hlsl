@@ -4,7 +4,6 @@
 
 
 
-
 uniform float RotationAngle : register(b0[0]);
 uniform float Width : register(b0[1]);
 uniform float Height: register(b0[2]);
@@ -30,7 +29,7 @@ float4 RotationYaw(float4 Vec4,float Angle){
 		0.0f,0.0f,1.0f,0.0f,
 		0.0f,0.0f,0.0f,1.0f};
 		
-	return mul(Vec4,YawRotationMatrix);
+	return mul(YawRotationMatrix,Vec4);
 }
 float4 RotationPitch(float4 Vec4,float Angle){
 	float RadAngle = DegreeToRad(Angle);
@@ -40,7 +39,7 @@ float4 RotationPitch(float4 Vec4,float Angle){
 		sin(RadAngle),0.0f,cos(RadAngle),0.0f,
 		0.0f,0.0f,0.0f,1.0f};
 		
-	return mul(Vec4,PitchRotationMatrix);
+	return mul(PitchRotationMatrix,Vec4);
 }
 float4 RotationRoll(float4 Vec4,float Angle){
 	float RadAngle = DegreeToRad(Angle);
@@ -50,41 +49,44 @@ float4 RotationRoll(float4 Vec4,float Angle){
 		0.0f,sin(RadAngle),cos(RadAngle),0.0f,
 		0.0f,0.0f,0.0f,1.0f};
 		
-	return mul(Vec4,RollRotationMatrix);
+	return mul(RollRotationMatrix,Vec4);
 }
 
 
 vs_output VSEntry(const vs_input input)
 {
-	vs_output output;
+	vs_output Output;
 
 	float4 Input = float4(input.vPosition,1);
 	
 	float4x4 OrthographicProjectionMatrix = {
 		1.0f,0.0f,0.0f,0.0f,
 		0.0f,1.0f,0.0f,0.0f,
-		0.0f,0.0f,(2.0f/3.0f),(3.0f/2.0f),
+		0.0f,0.0f,(2.0f/3.0f),3.0f/2.0f,
 		0.0f,0.0f,0.0f,1.0f};
 		
+#if 0
+	float4 ScalingVec = {0.3f,0.3f,0.3f,1};
+	Input = Input * ScalingVec;
+#else
+	float4x4 ScalingMat = {
+		0.3f,0,0,0,
+		0,0.3f,0,0,
+		0,0,0.3f,0,
+		0,0,0,1,
+	};
+	Input = mul(ScalingMat,Input);
+#endif
 	
-	float4 Scaling = {0.3f,0.3f,0.3f,1};
-	
-	
-	Input *= Scaling;
 	Input = RotationYaw(Input,RotationAngle);
 	Input = RotationPitch(Input,RotationAngle);
 	Input = RotationRoll(Input,0);
 	Input.x /= (Width/Height);
-	Input = mul(Input,OrthographicProjectionMatrix);
+	Input = mul(OrthographicProjectionMatrix,Input);
 	
-	output.vPosition = Input;
-	output.Color =  input.Color;
-	/*
-	if(input.Color.r>=0.999f && input.Color.r != 1.0f){
-		output.Color = float4(0.64f,0.64f,0.64f,0.64f);
-	}*/
-	
-	output.Normal = float3(0,0,0);
-	return output;
+	Output.vPosition = Input;
+	Output.Color =  input.Color;
+	Output.Normal = float3(0,0,0);
+	return Output;
 }
 

@@ -25,8 +25,7 @@ ConstantOutputType PatchConstantFunction(InputPatch<HsInput,3> inputPatch, uint 
 	Output.Edges[1] = 1;
 	Output.Edges[2] = 1;
 	
-	Output.inside = 3;
-	
+	Output.inside = 2;	
 	return Output;
 }
 
@@ -39,9 +38,6 @@ ConstantOutputType PatchConstantFunction(InputPatch<HsInput,3> inputPatch, uint 
 HsOutput HSEntry(InputPatch<HsInput,3>patch, uint PointID : SV_OutputControlPointID, uint PatchID : SV_PrimitiveID){
 	HsOutput Output;
 	Output.Color = patch[PointID].Color;
-	if(patch[PointID].Color.r>=0.999f && patch[PointID].Color.r != 1.0f){
-		Output.Color = float4(0.64f,0.64f,0.64f,0.64f);
-	}
 	Output.Position = patch[PointID].Position;
 	
 	return Output;

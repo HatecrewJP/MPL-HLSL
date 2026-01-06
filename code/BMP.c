@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <malloc.h>
 
-void BGRXtoRGBA(int *data,unsigned int iterations){
+static void BGRXtoRGBA(int *data,unsigned int iterations){
 	
 	for(unsigned int i = 0; i<iterations; i++){
 	unsigned char *AsChar = (unsigned char*)data;
@@ -36,7 +36,7 @@ struct BitMapInfoHeader40{
 	unsigned ImportantColors;
 };
 
-void* ParseBMPFile(char *Filename){
+static void* ParseBMPFile(char *Filename){
 	FileHeader fh;
 	char HeaderBuffer[14];
 	FILE* f = fopen(Filename, "r");

@@ -22,13 +22,6 @@ DSOutput DSEntry(ConstantOutputType input, float3 UVWCoord : SV_DomainLocation, 
 	Output.Color = (patch[0].Color + patch[1].Color + patch[2].Color)/3.0f;
 	Output.Color.w = 1.0f;
 	Output.Normal = float3(0,0,0);
-	/*
-	bool Tri1Precise = patch[0].Color.r>0.999 && patch[0].Color.r!=1.0f;
-	bool Tri2Precise = patch[1].Color.r>0.999 && patch[1].Color.r!=1.0f;
-	bool Tri3Precise = patch[2].Color.r>0.999 && patch[2].Color.r!=1.0f;
-	if(!(Tri1Precise && Tri2Precise && Tri3Precise)){
-		Output.Color = float4(0.64f,0.64f,0.64f,0.64f);
-	}*/
 	
 	return Output;
 }
