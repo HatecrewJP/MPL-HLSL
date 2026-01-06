@@ -76,7 +76,7 @@ void* ParseBMPFile(char *Filename){
 		memcpy(((int*)PixelArrayAlias)+i, (data+i*3), 3);
 	}
 	
-	BGRXtoRGBA((int*)PixelArrayAlias,PixelCount);
+		BGRXtoRGBA((int*)PixelArrayAlias,PixelCount);
 	
 	free(ImageBuffer);
 	free(data);
