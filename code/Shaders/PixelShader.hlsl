@@ -1,5 +1,5 @@
 #define DEBUGZ 0
-#define IMPRECISIONFIX 0
+#define IMPRECISIONFIX 1
 cbuffer CBuffer : register(b0){
 	float RotationAngle : packoffset(c0.x);
 	float Width  : packoffset(c0.y);
@@ -25,7 +25,7 @@ ps_output PSEntry(const ps_input input){
 	output.Color = input.Color;
 	
 #if IMPRECISIONFIX
-	[branch]if(input.Color.r >= 0.999f){
+	[branch]if(input.Color.r >= 0.99999995f){
 		output.Color = float4(ColorR,ColorG,ColorB,ColorA);
 	}
 #else
