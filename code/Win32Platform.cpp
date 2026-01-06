@@ -1097,41 +1097,9 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					&GlobalRenderTargetView, 1,
 					"11:PixelShader"));
 			
-				//BMP Texture
-				unsigned *PixelArrayFromFile = (unsigned*)ParseBMPFile("Cube.bmp");
 				
-				unsigned ImageSize 	 =  PixelArrayFromFile[0] - 4*sizeof(unsigned);
-				unsigned ImageWidth  =  PixelArrayFromFile[1];
-				unsigned ImageHeight =  PixelArrayFromFile[2];
-				unsigned *ImageData  = &PixelArrayFromFile[4];
 				
-				D3D11_TEXTURE2D_DESC ImageDesc;
-				ImageDesc.Width = ImageWidth;
-				ImageDesc.Height = ImageHeight;
-				ImageDesc.MipLevels = 1;
-				ImageDesc.ArraySize = 1;
-				ImageDesc.Format = DXGI_FORMAT_R8G8B8A8_UINT;
-				ImageDesc.SampleDesc = {1,0};
-				ImageDesc.Usage = D3D11_USAGE_DEFAULT;
-				ImageDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-				ImageDesc.CPUAccessFlags = 0;
-				ImageDesc.MiscFlags = 0;
 				
-				D3D11_SUBRESOURCE_DATA ImageSubresourceData;
-				ImageSubresourceData.pSysMem = ImageData;
-				ImageSubresourceData.SysMemPitch = ImageWidth*4;
-				ImageSubresourceData.SysMemSlicePitch = 0;
-				
-				ID3D11Texture2D *ImageTexture = nullptr;
-
-				res = GlobalDevice->CreateTexture2D(&ImageDesc,&ImageSubresourceData,&ImageTexture);
-				// ShaderResourceView
-				
-				D3D11_UNORDERED_ACCESS_VIEW_DESC ImageUAVDesc;
-				ImageUAVDesc.Format = DXGI_FORMAT_R8G8B8A8_UINT;
-				ImageUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
-				ImageUAVDesc.Texture2D = {0};
-				res = GlobalDevice->CreateUnorderedAccessView(ImageTexture,&ImageUAVDesc, &GlobalUAVArray[1]);
 			
 			
 			//ComputeShader
@@ -1143,9 +1111,9 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			
 			GlobalComputeShaderStateArray[0].ShaderResourceViewArray = &GlobalCSShaderResourceView;
-			GlobalComputeShaderStateArray[0].ShaderResourceViewCount = 1;
+			GlobalComputeShaderStateArray[0].ShaderResourceViewCount = 0;
 			GlobalComputeShaderStateArray[0].UnorderedAccessViewArray = GlobalUAVArray;
-			GlobalComputeShaderStateArray[0].UnorderedAccessViewCount = 2;
+			GlobalComputeShaderStateArray[0].UnorderedAccessViewCount = 1;
 			GlobalComputeShaderStateArray[0].ComputeShader = GlobalComputeShaderArray[0];
 			
 			
