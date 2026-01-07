@@ -12,7 +12,6 @@ cbuffer CBuffer : register(b0){
 struct ps_input{
 	float4 vPosition : SV_Position;
  	float4 Color : COLOR;
-	float3 Normal : NORMAL;
 };
 
 struct ps_output{

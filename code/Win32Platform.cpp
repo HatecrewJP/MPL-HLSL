@@ -28,8 +28,6 @@ global_variable bool VsyncActive = 1;
 
 global_variable bool GlobalRunning = false;
 global_variable bool GlobalAnimationIsActive = false;
-global_variable bool GlobalTesselationActive = false;
-global_variable bool GlobalGeometryShaderActive = true;
 
 static ShaderColor GlobalActiveShaderColor = RED;
 
@@ -106,7 +104,7 @@ internal void Win32ProcessError(DWORD Error){
 	OutputDebugStringA((LPSTR)lpMsgBuf);
 	exit(-1);
 }
-#define ResetModeAndOffset() TesselationMode = 0; PipelineStateOffset = 4;
+#define ResetModeAndOffset() do{TesselationMode = 0; PipelineStateOffset = 4;}while(0);
 internal void MessageLoop(ID3D11Device* Device, float *ConstantBuffer){
 	MSG Message;
 	while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE)){
@@ -130,7 +128,7 @@ internal void MessageLoop(ID3D11Device* Device, float *ConstantBuffer){
 				}
 				else if(VKCode == '2'){
 					ClearActivePipelineState();
-					PushPipelineState(&PipelineStateArray[7]);
+					PushPipelineState(&PipelineStateArray[1]);
 					if(!GlobalAnimationIsActive){
 						ConstantBuffer[0] = 200.0f;
 						GlobalActiveShaderColor = RED;
@@ -140,7 +138,7 @@ internal void MessageLoop(ID3D11Device* Device, float *ConstantBuffer){
 				}
 				else if(VKCode == '3'){
 					ClearActivePipelineState();
-					PushPipelineState(&PipelineStateArray[8]);
+					PushPipelineState(&PipelineStateArray[2]);
 					if(!GlobalAnimationIsActive){
 						ConstantBuffer[0] = 200.0f;
 						GlobalActiveShaderColor = RED;
@@ -150,7 +148,7 @@ internal void MessageLoop(ID3D11Device* Device, float *ConstantBuffer){
 				}
 				else if(VKCode == '4'){
 					ClearActivePipelineState();
-					PushPipelineState(&PipelineStateArray[9]);
+					PushPipelineState(&PipelineStateArray[3]);
 					if(!GlobalAnimationIsActive){
 						ConstantBuffer[0] = 200.0f;
 						GlobalActiveShaderColor = RED;
@@ -160,7 +158,7 @@ internal void MessageLoop(ID3D11Device* Device, float *ConstantBuffer){
 				}
 				else if(VKCode == '5'){
 					ClearActivePipelineState();
-					PushPipelineState(&PipelineStateArray[10]);
+					PushPipelineState(&PipelineStateArray[4]);
 					if(!GlobalAnimationIsActive){
 						ConstantBuffer[0] = 200.0f;
 						GlobalActiveShaderColor = RED;
@@ -170,7 +168,7 @@ internal void MessageLoop(ID3D11Device* Device, float *ConstantBuffer){
 				}
 				else if(VKCode == '6'){
 					ClearActivePipelineState();
-					PushPipelineState(&PipelineStateArray[11]);
+					PushPipelineState(&PipelineStateArray[5]);
 					if(!GlobalAnimationIsActive){
 						ConstantBuffer[0] = 200.0f;
 						GlobalActiveShaderColor = RED;
@@ -180,7 +178,7 @@ internal void MessageLoop(ID3D11Device* Device, float *ConstantBuffer){
 				}
 				else if(VKCode == '7'){
 					ClearActivePipelineState();
-					PushPipelineState(&PipelineStateArray[11]);
+					PushPipelineState(&PipelineStateArray[5]);
 					if(!GlobalAnimationIsActive){
 						ConstantBuffer[0] = 200.0f;
 						GlobalActiveShaderColor = RED;
@@ -191,20 +189,10 @@ internal void MessageLoop(ID3D11Device* Device, float *ConstantBuffer){
 				else if(VKCode == 'P'){
 					VsyncActive ^=1;
 				}
-				else if(VKCode == 'T'){
-					PipelineStateOffset = (PipelineStateOffset+3)%6;
-					
-					ClearActivePipelineState();
-					PushPipelineState(&PipelineStateArray[(TesselationMode%3)+PipelineStateOffset]);
-					
-				}
 				else if(VKCode == VK_SPACE){
 					GlobalAnimationIsActive ^= true;
 				}
-				else if(VKCode == 'C'){
-					ClearActivePipelineState();
-					PushPipelineState(&PipelineStateArray[(++TesselationMode%3)+PipelineStateOffset]);
-				}
+				
 				bool AltKeyWasDown = ((Message.lParam & (1 << 29)) != 0);
 				if((VKCode == VK_F4) && AltKeyWasDown){
 					GlobalRunning = false;
@@ -901,113 +889,6 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					(UINT*)&GlobalIndexedGeometryArray[0].VertexSize,
 					(UINT*)&Zero,
 					GlobalIndexBufferArray[0],DXGI_FORMAT_R32_UINT,ArrayCount(CubeIndices),
-					VSCubeInputLayout,
-					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
-					VSCube,
-					&ConstantBuffer,1,
-					nullptr,
-					nullptr,
-					GlobalGeometryShaderArray[1],
-					RasterizerState2,
-					&GlobalPixelShaderArray[0],
-					&ConstantBuffer,1,
-					&GlobalRenderTargetView, 1,
-					"1:Cube"));
-			
-			AddPipelineStateToArray(BuildPipelineState(
-					&GlobalVertexBufferArray[0],1,
-					(UINT*)&GlobalIndexedGeometryArray[0].VertexSize,
-					(UINT*)&Zero,
-					GlobalIndexBufferArray[0],DXGI_FORMAT_R32_UINT,ArrayCount(CubeIndices),
-					VSCubeInputLayout,
-					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
-					VSCube,
-					&ConstantBuffer,1,
-					nullptr,
-					nullptr,
-					GlobalGeometryShaderArray[0],
-					RasterizerState2,
-					&GlobalPixelShaderArray[0],
-					&ConstantBuffer,1,
-					&GlobalRenderTargetView, 1,
-					"2:CubeGeometryShaderEnabled"));
-			AddPipelineStateToArray(BuildPipelineState(
-					&GlobalVertexBufferArray[0],1,
-					(UINT*)&GlobalIndexedGeometryArray[0].VertexSize,
-					(UINT*)&Zero,
-					GlobalIndexBufferArray[0],DXGI_FORMAT_R32_UINT,ArrayCount(CubeIndices),
-					VSCubeInputLayout,
-					D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST,
-					VSCube,
-					&ConstantBuffer,1,
-					GlobalHullShaderArray[0],
-					GlobalDomainShaderArray[0],
-					nullptr,
-					RasterizerState2,
-					&GlobalPixelShaderArray[0],
-					&ConstantBuffer,1,
-					&GlobalRenderTargetView, 1,
-					"3:CubeGeometryTesselationEnabled"));
-					
-					
-			AddPipelineStateToArray(BuildPipelineState(
-					&GlobalVertexBufferArray[1],1,
-					(UINT*)&GlobalIndexedGeometryArray[1].VertexSize,
-					(UINT*)&Zero,
-					GlobalIndexBufferArray[1],DXGI_FORMAT_R32_UINT,ArrayCount(TriIndices),
-					VSCubeInputLayout,
-					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
-					VSCube,
-					&ConstantBuffer,1,
-					nullptr,
-					nullptr,
-					GlobalGeometryShaderArray[1],
-					RasterizerState1,
-					&GlobalPixelShaderArray[1],
-					&ConstantBuffer,1,
-					&GlobalRenderTargetView, 1,
-					"4:Tri"));
-			AddPipelineStateToArray(BuildPipelineState(
-					&GlobalVertexBufferArray[1],1,
-					(UINT*)&GlobalIndexedGeometryArray[1].VertexSize,
-					(UINT*)&Zero,
-					GlobalIndexBufferArray[1],DXGI_FORMAT_R32_UINT,ArrayCount(TriIndices),
-					VSCubeInputLayout,
-					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
-					VSCube,
-					&ConstantBuffer,1,
-					nullptr,
-					nullptr,
-					GlobalGeometryShaderArray[0],
-					RasterizerState1,
-					&GlobalPixelShaderArray[1],
-					&ConstantBuffer,1,
-					&GlobalRenderTargetView, 1,
-					"5:TriGeometryShaderEnabled"));
-			AddPipelineStateToArray(BuildPipelineState(
-					&GlobalVertexBufferArray[1],1,
-					(UINT*)&GlobalIndexedGeometryArray[1].VertexSize,
-					(UINT*)&Zero,
-					GlobalIndexBufferArray[1],DXGI_FORMAT_R32_UINT,ArrayCount(TriIndices),
-					VSCubeInputLayout,
-					D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST,
-					VSCube,
-					&ConstantBuffer,1,
-					GlobalHullShaderArray[0],
-					GlobalDomainShaderArray[0],
-					nullptr,
-					RasterizerState2,
-					&GlobalPixelShaderArray[1],
-					&ConstantBuffer,1,
-					&GlobalRenderTargetView, 1,
-					"6:TriGeometryTesselationEnabled"));
-			
-			//Example	
-			AddPipelineStateToArray(BuildPipelineState(
-					&GlobalVertexBufferArray[0],1,
-					(UINT*)&GlobalIndexedGeometryArray[0].VertexSize,
-					(UINT*)&Zero,
-					GlobalIndexBufferArray[0],DXGI_FORMAT_R32_UINT,ArrayCount(CubeIndices),
 					VSPassTroughInputLayout,
 					D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 					VSCube,
@@ -1019,7 +900,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					&GlobalPixelShaderArray[0],
 					nullptr,0,
 					&GlobalRenderTargetView, 1,
-					"7:VSActive"));
+					"1:VSActive"));
 					
 				
 					
@@ -1039,7 +920,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					&GlobalPixelShaderArray[0],
 					nullptr,0,
 					&GlobalRenderTargetView, 1,
-					"8:Tesselation"));
+					"2:Tesselation"));
 			
 			AddPipelineStateToArray(BuildPipelineState(
 					&GlobalVertexBufferArray[0],1,
@@ -1057,7 +938,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					&GlobalPixelShaderArray[0],
 					nullptr,0,
 					&GlobalRenderTargetView, 1,
-					"9:GeometryShader"));
+					"3:GeometryShader"));
 			
 			AddPipelineStateToArray(BuildPipelineState(
 					&GlobalVertexBufferArray[0],1,
@@ -1075,7 +956,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					&GlobalPixelShaderArray[0],
 					nullptr,0,
 					&GlobalRenderTargetView, 1,
-					"10:RasterizerSet"));
+					"4:RasterizerSet"));
 					
 			AddPipelineStateToArray(BuildPipelineState(
 					&GlobalVertexBufferArray[0],1,
@@ -1091,9 +972,9 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					GlobalGeometryShaderArray[0],
 					RasterizerState1,
 					&GlobalPixelShaderArray[1],
-					nullptr,0,
+					&ConstantBuffer,1,
 					&GlobalRenderTargetView, 1,
-					"11:PixelShader"));
+					"5:PixelShader"));
 			
 				
 				
@@ -1113,7 +994,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			GlobalComputeShaderStateArray[0].ComputeShader = GlobalComputeShaderArray[0];
 			
 			
-			PushPipelineState(&PipelineStateArray[1]);
+			PushPipelineState(&PipelineStateArray[0]);
 			GlobalActiveCSState = &NILComputeShaderState;
 
 			static unsigned int AnimationCount = 1;

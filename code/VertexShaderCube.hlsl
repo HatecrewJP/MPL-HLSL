@@ -18,7 +18,6 @@ struct vs_output
 {
 	float4 vPosition :SV_Position;
 	float4 Color : COLOR;
-	float3 Normal : NORMAL;
 };
 
 float4 RotationYaw(float4 Vec4,float Angle){
@@ -86,7 +85,6 @@ vs_output VSEntry(const vs_input input)
 	
 	Output.vPosition = Input;
 	Output.Color =  input.Color;
-	Output.Normal = float3(0,0,0);
 	return Output;
 }
 
