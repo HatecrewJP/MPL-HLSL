@@ -1,8 +1,5 @@
-
 #define PI 3.14159265359
 #define DegreeToRad(x) ((x)*PI/180)
-
-
 
 uniform float RotationAngle : register(b0[0]);
 uniform float Width : register(b0[1]);
@@ -52,31 +49,17 @@ float4 RotationRoll(float4 Vec4,float Angle){
 }
 
 
-vs_output VSEntry(const vs_input input)
-{
+vs_output VSEntry(const vs_input input){
 	vs_output Output;
-
 	float4 Input = float4(input.vPosition,1);
 	
+	float4 ScalingVec = {1.1f,1.1f,1.1f,1};
 	float4x4 OrthographicProjectionMatrix = {
 		1.0f,0.0f,0.0f,0.0f,
 		0.0f,1.0f,0.0f,0.0f,
 		0.0f,0.0f,(2.0f/3.0f),3.0f/2.0f,
 		0.0f,0.0f,0.0f,1.0f};
-		
-#if 0
-	float4 ScalingVec = {0.3f,0.3f,0.3f,1};
 	Input = Input * ScalingVec;
-#else
-	float4x4 ScalingMat = {
-		0.3f,0,0,0,
-		0,0.3f,0,0,
-		0,0,0.3f,0,
-		0,0,0,1,
-	};
-	Input = mul(ScalingMat,Input);
-#endif
-	
 	Input = RotationYaw(Input,RotationAngle);
 	Input = RotationPitch(Input,RotationAngle);
 	Input = RotationRoll(Input,0);

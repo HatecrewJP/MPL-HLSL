@@ -350,34 +350,12 @@ Since the topology doesn't change the output of the stages before the tesselatio
 \subsection{Required Pipeline Stages}
 To see the an image from the data that has been passed to the cpu, a few pipeline stages must be active\cite{HLSLVS}.
 In the cube example, vertex shader and pixel shader are active and only pass the data to the next stage without modifying it.
-The rasterizer stage cannot be programmed by a shader, but its state can be changed by the cpu. If no rasterizer state is set, the default state is used.
+The rasterizer stage cannot be programmed by a shader, but its state can be changed by the cpu.
 
 \noindent This is the output after the IA stage and only passing through data.
 
 \noindent \includegraphics[height= 0.2\textheight]{Assets/PassThrough.png}
 
-\subsection{Rasterizer Stage}
-This stage is the last stage before the pixel shader.
-Because the primitves are described by vectors in the preceeding stages,
-the rasterizer is responsible for transforming the data from the previous stages into a raster image. 
-The rasterizer takes the primitives and calculates which pixels in the image are covered by a primitive.
-There are different
-\href{https://learn.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-rasterizer-stage-rules}
-{rasterization rules}, depending on the primitve type, multisampling and anti-aliasing.
-
-\noindent The rasterizer cannot be programmed with a shader like the other stages, but some settings can be set by the cpu.
-It is possible to specify if the primitives are filled or a wireframe, enabling or disabling multisampling, enabling or disabling anti-aliasing.
-More settings can be found in the \href{https://learn.microsoft.com/en-us/windows/win32/api/D3D11/ns-d3d11-d3d11_rasterizer_desc}{Direct3D reference}.
-
-\noindent To properly see the effect of the different stages in the example, 
-the rasterizer is the first stage that is changed, even though it would be further down the pipeline.
-The rasterizer is set to wireframe mode.
-
-\noindent \includegraphics[height= 0.2\textheight]{Assets/Rasterizer.png}
-
-\noindent Notice, that the color seems to be dissapearing on the bottom left side. This is because the rasterizer is not only deciding, which pixels are filled,
-it also does other things like interpolating between per-vertex data. The vertex on the bottom left is the same color as the background 
-and the closer a pixel gets to this vertex, the more the pixels color is influenced by the vertex color.
 
 \subsection{Vertex Shader Stage}
 The vertex shader stage is the first stage after the input assembler stage. It is responsible for placing the primitves at the correct position on the screen.
@@ -504,11 +482,10 @@ The domain shader needs to know the control patch topology.
 
 \noindent This is the cube, after tesselation:
 
-\noindent \includegraphics[height= 0.2\textheight]{Assets/TesselationStage.png}
+\noindent \includegraphics[height= 0.2\textheight]{Assets/Tesselator.png}
 
 
 \subsection{Geometry Shader Stage}
-
 Geometry Shaders are the last stage before the rasterizer and can be used to generate new primitives. Unlike the previous stages, which operate on single vertices, geometry shaders
 are invoked for each primitive coming from the previous stage\cite{HLSLGS}. 
 The data from the input primitives can now be used to generate new vertices, which define the new primitives.
@@ -568,6 +545,30 @@ three triangles, each made by the midpoint and two vertices from the input,
 which are then appended to the output stream as a \href{https://learn.microsoft.com/en-us/windows/win32/direct3d9/triangle-strips}{triangle strip}.
 
 \noindent The geometry shader output is passed down to the rasterizer stage.
+
+\subsection{Rasterizer Stage}
+This stage is the last stage before the pixel shader.
+Because the primitves are described by vectors in the preceeding stages,
+the rasterizer is responsible for transforming the data from the previous stages into a raster image. 
+The rasterizer takes the primitives and calculates which pixels in the image are covered by a primitive.
+There are different
+\href{https://learn.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-rasterizer-stage-rules}
+{rasterization rules}, depending on the primitve type, multisampling and anti-aliasing.
+
+\noindent The rasterizer cannot be programmed with a shader like the other stages, but some settings can be set by the cpu.
+It is possible to specify if the primitives are filled or a wireframe, enabling or disabling multisampling, enabling or disabling anti-aliasing.
+More settings can be found in the \href{https://learn.microsoft.com/en-us/windows/win32/api/D3D11/ns-d3d11-d3d11_rasterizer_desc}{Direct3D reference}.
+
+\noindent To properly see the effect of the different stages in the example, 
+the rasterizer is the first stage that is changed, even though it would be further down the pipeline.
+The rasterizer is set to wireframe mode.
+
+\noindent \includegraphics[height= 0.2\textheight]{Assets/Rasterizer.png}
+
+\noindent Notice, that the color seems to be dissapearing on the bottom left side. This is because the rasterizer is not only deciding, which pixels are filled,
+it also does other things like interpolating between per-vertex data. The vertex on the bottom left is the same color as the background 
+and the closer a pixel gets to this vertex, the more the pixels color is influenced by the vertex color.
+
 
 \subsection{Pixel Shader Stage}
 After the rasterizer generated an image from the primitives, the pixel shader is invoked per-pixel and 

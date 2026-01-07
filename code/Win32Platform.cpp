@@ -22,14 +22,13 @@
 #include "Structs.h"
 #include "Win32Platform.h"
 
-#include "BMP.c"
 
 global_variable bool VsyncActive = 1;
 
 global_variable bool GlobalRunning = false;
 global_variable bool GlobalAnimationIsActive = false;
 
-static ShaderColor GlobalActiveShaderColor = RED;
+static ShaderColor GlobalActiveShaderColor = YELLOW;
 
 global_variable GraphicsPipelineState PipelineStateArray[MAX_PIPELINE_STATES];
 global_variable unsigned int PipelineStateCount = 0;
@@ -46,10 +45,6 @@ global_variable IDXGISwapChain1 		*GlobalSwapChain 		= nullptr;
 global_variable ID3D11DeviceContext 	*GlobalDeviceContext 	= nullptr;
 global_variable ID3D11RenderTargetView 	*GlobalRenderTargetView = nullptr;
 global_variable ID3D11Texture2D			*GlobalFrameBuffer 		= nullptr;
-
-global_variable UINT GlobalActiveIndexCount = 0;
-global_variable UINT GlobalStrides[1];
-global_variable UINT GlobalOffsets[1];
 
 global_variable ID3D11Buffer* 			GlobalVertexBufferArray[32] = {};
 global_variable ID3D11Buffer* 			GlobalIndexBufferArray[64] 	= {};
@@ -68,7 +63,6 @@ global_variable unsigned int IndexedGeometryCount = 0;
 
 global_variable ComputeShaderState* GlobalActiveCSState = nullptr;
 
-global_variable ID3D11ShaderResourceView *GlobalCSShaderResourceView = nullptr;
 global_variable ID3D11ComputeShader* GlobalComputeShaderArray[32];
 
 global_variable ComputeShaderState GlobalComputeShaderStateArray[32];
@@ -415,6 +409,7 @@ internal ID3D11PixelShader* Win32CreatePixelShader(
 	if(!PSCode.Code) return nullptr;
 	ID3D11PixelShader *PixelShader = nullptr;
 	ASSERT(Device->CreatePixelShader(PSCode.Code,PSCode.Size,NULL,&PixelShader)==S_OK);
+	ASSERT(PixelShader);
 	return PixelShader;
 	
 }
@@ -690,23 +685,17 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			};
 			UINT CubeIndices[]{
 				//Front Face
-				0,2,3,
-				0,3,1,
+				0,2,3,  0,3,1,
 				//Back Face
-				7,6,4,
-				7,4,5,
+				7,6,4,  7,4,5,
 				//Left Face
-				4,6,2,
-				4,2,0,
+				4,6,2,  4,2,0,
 				//Right Face
-				1,3,7,
-				1,7,5,
+				1,3,7,  1,7,5,
 				//Top Face
-				2,6,7,
-				2,7,3,
+				2,6,7,  2,7,3,
 				//Bottom Face
-				0,1,4,
-				4,1,5
+				0,1,4,  4,1,5,
 			};
 			CreateVBForIndexedGeometry(
 				CubeVertices,
@@ -717,25 +706,6 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				1*sizeof(UINT));
 				
 				
-				
-			float TriVertices[]{
-				/*Pos*/ -1.00f,0.00f, 0.00f, /*COLOR*/ 1.00f, 0.00f, 0.00f, 1.00f,
-				/*Pos*/ -1.00f,1.00f, 0.00f, /*COLOR*/ 0.00f, 1.00f, 0.00f, 1.00f,
-				/*Pos*/  0.00f,1.00f, 0.00f, /*COLOR*/ 0.00f, 0.00f, 1.00f, 1.00f,
-				
-			};
-			UINT TriIndices[]{
-				//Front
-				0,2,3
-			};
-			CreateVBForIndexedGeometry(
-				TriVertices,
-				sizeof(TriVertices),
-				7 * sizeof(float),
-				TriIndices,
-				sizeof(TriVertices),
-				1*sizeof(UINT));
-			
 			
 			
 				
@@ -755,7 +725,6 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			ASSERT(VSCode.Code);
 			#define VSCube GlobalVertexShaderArray[1]
 			#define VSCubeInputLayout VSInputLayoutArray[1]
-			
 			VSCube = Win32CreateVertexShader(GlobalDevice,VSCode.Code,VSCode.Size);
 				ASSERT(VSCube);
 				VSCubeInputLayout = Win32CreateVertexInputLayout(
@@ -766,19 +735,19 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			//Adding PixelShaders
 			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"PixelShaderPassThrough.hlsl","PSEntry","ps_5_0"));
-			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"PixelShader.hlsl","PSEntry","ps_5_0"));
+			Win32AddPixelShaderToArray(GlobalPixelShaderArray,Win32CreatePixelShader(GlobalDevice,L"PixelShaderCube.hlsl","PSEntry","ps_5_0"));
 			
 			
 			
 			
 			//HUllShader
-			ShaderCode HSCode = Win32CompileShaderFromFile(L"HullShader.hlsl","HSEntry","hs_5_0");
+			ShaderCode HSCode = Win32CompileShaderFromFile(L"HullShaderCube.hlsl","HSEntry","hs_5_0");
 			ASSERT(HSCode.Code);
 			res = GlobalDevice->CreateHullShader(HSCode.Code,HSCode.Size,nullptr,&GlobalHullShaderArray[0]);
 			ASSERT(res==S_OK);
 			
 			//DomainShader
-			ShaderCode DSCode = Win32CompileShaderFromFile(L"DomainShader.hlsl","DSEntry","ds_5_0");
+			ShaderCode DSCode = Win32CompileShaderFromFile(L"DomainShaderCube.hlsl","DSEntry","ds_5_0");
 			ASSERT(DSCode.Code);
 			res = GlobalDevice->CreateDomainShader(DSCode.Code,DSCode.Size,nullptr,&GlobalDomainShaderArray[0]);
 			ASSERT(res==S_OK);
@@ -788,11 +757,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			ASSERT(GSCode.Code);
 			res = GlobalDevice->CreateGeometryShader(GSCode.Code,GSCode.Size,nullptr,&GlobalGeometryShaderArray[0]);
 			ASSERT(res==S_OK);
-			//GeometryShader
-			GSCode = Win32CompileShaderFromFile(L"GeometryShaderPassThrough.hlsl","GSEntry","gs_5_0");
-			ASSERT(GSCode.Code);
-			res = GlobalDevice->CreateGeometryShader(GSCode.Code,GSCode.Size,nullptr,&GlobalGeometryShaderArray[1]);
-			ASSERT(res==S_OK);
+			
 			
 			//Rasterizer
 			D3D11_RASTERIZER_DESC RasterizerDesc1;
@@ -846,7 +811,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			float ConstantBufferData[64] = {};
 			ConstantBufferData[4] = 1.0f;
-			ConstantBufferData[5] = 0.0f;
+			ConstantBufferData[5] = 1.0f;
 			ConstantBufferData[8] = 0.0f;
 			ConstantBufferData[9] = 1.0f;
 			//Buffer for Angle
@@ -982,7 +947,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			
 			//ComputeShader
-			ShaderCode CSCode = Win32CompileShaderFromFile(L"ComputeShader.hlsl","CSEntry","cs_5_0");
+			ShaderCode CSCode = Win32CompileShaderFromFile(L"ComputeShaderCube.hlsl","CSEntry","cs_5_0");
 			ASSERT(CSCode.Code);
 			res = GlobalDevice->CreateComputeShader(CSCode.Code,CSCode.Size,nullptr,&GlobalComputeShaderArray[0]);
 			ASSERT(res==S_OK);
@@ -1022,16 +987,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				ViewPort.Height = (float)Height;
 				ViewPort.MinDepth = 0.0f;
 				ViewPort.MaxDepth = 1.0f;
-				
-				
-				D3D11_RECT ScissorRect;		
 
-				ScissorRect.left  	= (LONG)(ViewPort.TopLeftX + (Width * 0.25f));
-				ScissorRect.top   	= (LONG)(ViewPort.TopLeftY + (Height * 0.25f));
-				ScissorRect.right 	= (LONG)(ViewPort.Width * 0.75f);
-				ScissorRect.bottom  = (LONG)(ViewPort.Height * 0.75f);
-				
-				const float BackgroundClearColorRGBA[4] = {0,0,0,1};
+				const float BackgroundClearColorRGBA[4] = {1,1,1,1};
 				GlobalDeviceContext->ClearRenderTargetView(GlobalRenderTargetView, BackgroundClearColorRGBA);
 				
 				ConstantBufferData[1]=(float)Width;
@@ -1045,7 +1002,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				
 				
 				for(unsigned int i = 0; i< ActivePipelineStateCount;i++){
-					UINT DrawIndexCount = SetPipelineState(GlobalDeviceContext,&ActivePipelineStateArray[i],&ViewPort,1,&ScissorRect,1);
+					UINT DrawIndexCount = SetPipelineState(GlobalDeviceContext,&ActivePipelineStateArray[i],&ViewPort,1,nullptr,0);
 					ASSERT(DrawIndexCount);
 					GlobalDeviceContext->DrawIndexed(DrawIndexCount,0,0);
 				}
@@ -1064,7 +1021,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 						
 						
 						switch(GlobalActiveShaderColor){
-							case WHITE:{
+							case YELLOW:{
 								ConstantBufferData[4] = 1.0f;
 								ConstantBufferData[5] = 0.0f;
 								ConstantBufferData[8] = 0.0f;
@@ -1087,7 +1044,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 							case BLUE:{
 								ConstantBufferData[4] = 1.0f;
 								ConstantBufferData[5] = 1.0f;
-								ConstantBufferData[8] = 1.0f;
+								ConstantBufferData[8] = 0.0f;
 								ConstantBufferData[9] = 1.0f;
 							}break;
 						}

@@ -78,7 +78,7 @@ struct CameraObject{
 enum ShaderColor{
 	RED,
 	GREEN,
-	WHITE,
+	YELLOW,
 	BLUE,
 	
 	SHADER_COLOR_COUNT
