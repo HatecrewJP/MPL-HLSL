@@ -972,7 +972,9 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				ASSERT(GetClientRect(Window,&ClientRect));
 				UINT NewWidth  = ClientRect.right - ClientRect.left;
 				UINT NewHeight = ClientRect.bottom - ClientRect.top;
-				
+				if(NewHeight * NewWidth == 0){
+					continue;
+				}
 				if(Width != NewWidth || Height!= NewHeight){
 					Width = NewWidth;
 					Height = NewHeight;
