@@ -4,7 +4,7 @@ In this seminar I'm studying the basics of the shading language HLSL, where the 
 I'm making this application to understand the graphics pipeline and the different shader types and to learn the Direct3D11 API.
 
 Build:
-This project can be built by running the b.bat script. The executable can be found in "/MPL-HLSL/build/".
+This project can be built by running the b.bat script found in the misc directory. The build output can be found in "/MPL-HLSL/build/".
 
 Running:
 The working directory has to be the folder that contains the shader source files. The default working directory is "/MPL-HLSL/code" as it contains all the shader source files.
