@@ -48,187 +48,42 @@ The latest shader model is the 6th version, which is used by Direct3D 12.
 
 
 \section{Data Types}
-HLSL supports various data types. This section gives an overview over the different Data Types.
-
-\subsection{Scalar}
-Scalar variables use a single component of a register. There are different kinds of scalar data types.
-Common data types are:
-\begin{itemize}
-\item\textbf{bool}: true or false
-\item\textbf{int}: 32-bit signed integer
-\item\textbf{uint}: 32-bit unsigned integer
-\item\textbf{half}: 16-bit floating point
-\item\textbf{float}: 32-bit floating point
-\item\textbf{double}: 64-bit floating point
-\item\textbf{snorm float}: 32-bit signed-normalized float in the intervall [-1,1]
-\item\textbf{unorm float}: 32-bit unsigned-normalized float in the intervall [0,1] 
-\end{itemize}
-
-\subsection{Vector}
-Vectors are variables that use up to 4 components\cite{HLSLVector}. The type can be any of the scalar data types. A vector can be declared in two ways:
-
-Declaration with a template: \colorbox{bg}{\textbf{vector}<Type, Components = [1,4]>}
-
-\noindent \textit{Example:}
-\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-//A four component float
-vector<float, 4> ColorRGBA;
-
-//A single component float, the same as a scalar float
-vector<float, 1> RotationAngle; 
-\end{minted}
-
-Declaration as a type: \colorbox{bg}{\textbf{float[n]}, where n is a number in the intervall [1,4].}
+HLSL supports various data types. Data can be stored in registers, which are made of four 32-bit components.
+\textbf{Scalar} variables use one component and are able to represent different types such as integers, floats or booleans.
+\textbf{Vectors} can use up to four components and use any of the scalar types. A \textbf{matrix} is a grid of up to four rows and colums, respectively.
+The data type of matrices can be any of the scalar types. \textbf{Structs} are a collection of data and work like c's structs.
+HLSL requires buffer objects that, which store data passed by the cpu. 
+There are different types of buffer such as \textbf{cbuffer}-objects or \textbf{RWBuffer}.
+A \textbf{cbuffer} is a buffer that contains constant data, whereas \textbf{RWBuffer} is a buffer with read and write access.
+Each buffer has its own way to access the data. The identifiers in Constant Buffers can be accessed like global variables. 
+RWBuffers can be accessed like an array.
 
 \noindent \textit{Examples:}
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-float4 vPosition :SV_Position;
-float4 Color : COLOR;
-float3 Normal : NORMAL;
-\end{minted}
-
-\noindent Accessing a component can be done by using the structure operator ``\textbf{.}''\cite{HLSLComponentMath} followd by the letters xyzw or rgba.
-
-\noindent\textit{Examples:}
-\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-Vector2.xy  //acceses the first and second component
-Vector3.rgb //acceses the first second and third component
-Vector4.yzw //accesses the second, third and fourth component
-\end{minted}
-
-\noindent The letters \textit{xyzw} or \textit{rgba} correspond to the components of a Vector.
-\begin{itemize}
-  \item\textit{x} and \textit{r} correspond to the first component.
-  \item\textit{y} and \textit{g} correspond to the second component.
-  \item\textit{z} and \textit{b} correspond to the third component.
-  \item\textit{w} and \textit{a} correspond to the fourth component.
-\end{itemize}
-
-
-
-
-\subsection{Matrix}
-Matrices are two dimensional grids made of scalar components\cite{HLSLMatrix}. HLSL allows matrices with one to four columns and rows respectively.
-
-\noindent Like Vectors, there are two ways of declaring matrices:
-
-Template Declaration:\colorbox{bg}{\textbf{matrix}<Type, Rows = [1,4], Cols = [1,4]>}
-
-Type Declaration:\colorbox{bg}{Type[Rows]x[Columns]}
-
-\noindent \textit{Examples:}
-
-\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-//A 4 by 4 Matrix
-float4x4 RollRotationMatrix = {
-1.0f,0.0f,0.0f,0.0f,
-0.0f,cos(RadAngle),-sin(RadAngle),0.0f,
-0.0f,sin(RadAngle),cos(RadAngle),0.0f,
-0.0f,0.0f,0.0f,1.0f};
-
-//A 3 by 2 matrix, initialized with 0
-int3x2 Matrix = {}; 
-
-//A 3 by 3 uint matrix
-matrix<uint,3,3> Mat3x3 
-\end{minted}
-
-\noindent Accessing a component of a matrix can be done multiple ways using the structure operator ``\textbf{.}''\cite{HLSLComponentMath}. One way to index a component is \_mRC, where R and C correspond to Row/Column indices\cite{HLSLComponentMath}.
-
-\noindent \textit{Example:} 
-
-\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-//Accesses the first row of the RollRotationMatrix
-float4 FirstRow = RollRotationMatrix._m00_m01_m02_m03; 
-\end{minted}
-
-\subsection{Buffers}
-
-Each stage of the graphics pipeline has the possibilty to hold references to buffers provided by the cpu. To acces these buffers, HLSL provides multiple buffer types.
-
-\noindent Examples of Buffer types:
-\begin{itemize}
-\item\textbf{cbuffer}:  A Constant Buffer Object
-\item\textbf{RWBuffer}:  A read/write Buffer Object
-\item\textbf{RWTexture2D}: A 2D read/write Texture Buffer Object
-\end{itemize}
-
-
-\noindent \textit{Buffer Examples:}
-
-\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-// A Read/Write Texture2D Buffer Object 
-RWTexture2D <float4> TextureCopy;
-
-//A Constant Buffer Object
-cbuffer CBuffer{                          
-  float RotationAngle : packoffset(c0.x);
-  float Width  : packoffset(c0.y);
-  float Height : packoffset(c0.z);
-  float ColorR : packoffset(c1.x);
-  float ColorG : packoffset(c1.y);
-  float ColorB : packoffset(c2.x);
-  float ColorA : packoffset(c2.y);
-};
-\end{minted}
-
-\noindent Each buffer object has its own way of accessing the data.
-
-\noindent \textit{Examples:}
-
-Variables in a constant buffer can be used as global variables.
-
-\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-//Accessing the CBuffer Object from the previous example.
-RotationAngle +=1;
-\end{minted}
-
-RWTexture2D data can be accesed like an array.
-\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-//Accessing the TextureCopy from the previous example
-float4 Color = TextureCopy[0];
-\end{minted}
-
-\subsection{Struct}
-A Struct is a collection of data grouped together in memory. Structs are declared with the \textbf{struct} keyword.
-
-\noindent \textit{Examples:}
-\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-//This is the struct from the previous example
-struct ps_input{
-  float4 vPosition : SV_Position;
-  float4 Color : COLOR;
-  float3 Normal : NORMAL;
-};
-
-struct ps_output{
-  float4 Color : SV_Target0;
-};
-\end{minted}
-
-\noindent By using the structure operator ``\textbf{.}'' followed by the variable name, the data in a struct can be accessed.
-
-\noindent \textit{Example:}
-\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-ps_input Input;
-
-float4 Color = Input.Color;
-float3 Normal = Input.Normal;   
+  float AScalarFloat;
+  uint3 A3ComponentUnsignedIntegerVector;
+  int2x2 A2by2SignedIntegerMatrix
+  struct Coordinate2D{  //A struct representing
+    float x;            //a 2D float Coordinate 
+    float y;            
+  }
+  cbuffer Constants{  //A buffer that stores
+    float Width;      //The height and width
+    float Height;     //of a window made by the cpu
+  }
 \end{minted}
 
 \section{Semantics}
 Semantics are Strings attached to the input and output variables of shaders\cite{HLSLSemantic}.
 These Strings are used by the graphics pipeline to identify the meaning of the variable.
-If there are multiple variables with the same semantic meaning, an Integer can be appended to the semantic.
+If there are multiple variables with the same semantic meaning, an integer can be appended to the semantic.
 
 \noindent \textit{Examples:}
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
   //Position is treated as a Vertex Position.
   float4 Position : POSITION; 
-  
   //vPosition is treated as a Pixel Location. 
   float2 vPosition : VPOS;    
-  
   //Color is treated as a Color.
   float3 Color : COLOR1;      
 \end{minted}
@@ -260,10 +115,8 @@ If a discard statement is executed, the shader will not output the result of the
 
 \noindent \textit{Example:} 
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-  //The shader will not output anything,
-  //if the input's position has a positive z value.
   if(input.Position.z > 0){
-    discard;
+    discard; //No Pixel Shader ouput when z > 0
   }
 \end{minted}
 
@@ -297,42 +150,15 @@ Shader Model 4 introduced the shader profiles cs\_4\_0 and cs\_4\_1. Both profil
 \section{Graphics Pipeline}
 This section describes the Direct3D11 graphics pipeline, by looking at the state of each stage in the frame for this image and how each stage transforms its input.
 
-\noindent \includegraphics[height= 0.3\textheight]{Assets/FinalImage.png}
+\noindent \includegraphics[height= 0.2\textheight]{Assets/FinalImage.png}
 
 \subsection{CPU Data}
 The process starts on the cpu. The cpu has to decide what data the GPU has to transform and in which way.
 The first step is to pass the Cube data to the gpu. This is done by creating a Vertex Buffer and an Index Buffer, 
 that contain the necessary information for the input assembler. 
 The cpu is responsible for setting the shaders and resources for each stage.
-\noindent \textbf{This is the data used:}
+The \href{https://gist.github.com/HatecrewJP/04172ef23d3d41105c84c74415379846}{vertex and index data}, passed by the cpu, describes 8 vertices and 12 triangles, which describe the cube.
 
-\begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
-float CubeVertices[]{
-  /*Pos*/ -0.50f,-0.50f, 0.00f, /*COLOR*/ 0.00f, 0.00f, 0.00f, 1.00f,
-  /*Pos*/  0.50f,-0.50f, 0.00f, /*COLOR*/ 0.00f, 0.00f, 1.00f, 1.00f,
-  /*Pos*/ -0.50f, 0.50f, 0.00f, /*COLOR*/ 0.00f, 1.00f, 0.00f, 1.00f,
-  /*Pos*/  0.50f, 0.50f, 0.00f, /*COLOR*/ 0.00f, 1.00f, 1.00f, 1.00f,
-  /*Pos*/ -0.50f,-0.50f, 1.00f, /*COLOR*/ 1.00f, 0.00f, 0.00f, 1.00f,
-  /*Pos*/  0.50f,-0.50f, 1.00f, /*COLOR*/ 1.00f, 0.00f, 1.00f, 1.00f,
-  /*Pos*/ -0.50f, 0.50f, 1.00f, /*COLOR*/ 1.00f, 1.00f, 0.00f, 1.00f,
-  /*Pos*/  0.50f, 0.50f, 1.00f, /*COLOR*/ 1.00f, 1.00f, 1.00f, 1.00f,
-};
-UINT CubeIndices[]{
-  //Front Face
-  0,2,3,  0,3,1,
-  //Back Face
-  7,6,4,  7,4,5,
-  //Left Face
-  4,6,2,  4,2,0,
-  //Right Face
-  1,3,7,  1,7,5,
-  //Top Face
-  2,6,7,  2,7,3,
-  //Bottom Face
-  0,1,4,  4,1,5,
-};
-\end{minted}
-This data describes 8 vertices, each one with a different color.
 
 \subsection{Input Assembler Stage}
 The input assembler(IA) stage is responsible for transforming the vertices and indices into primitives, that can be processed. Primives can be points, lines or triangles.
@@ -346,7 +172,7 @@ In the cube example input assembler, vertex shader, rasterizer and pixel shader 
 
 \noindent This is the output with the IA stage and only passing through data.
 
-\noindent \includegraphics[height= 0.2\textheight]{Assets/PassThrough.png}
+\noindent \includegraphics[height= 0.16\textheight]{Assets/PassThrough.png}
 
 \subsection{Vertex Shader Stage}
 The vertex shader stage is the first stage after the input assembler stage. It is responsible for placing the primitves at the correct position on the screen.
@@ -355,21 +181,18 @@ but operates only at one at a time.
 
 \noindent This is the stage, where the cube is being rotated and scaled down and the projected with an orthographic projection.
 
-\noindent \includegraphics[height= 0.2\textheight]{Assets/VertexShader.png}
+\noindent \includegraphics[height= 0.16\textheight]{Assets/VertexShader.png}
 
 \href{https://gist.github.com/HatecrewJP/1a5f491b23e5101acf1bc5c783f65ece}{VertexShader}
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
 #define PI 3.14159265359
 #define DegreeToRad(x) ((x)*PI/180)
-
 uniform float RotationAngle : register(b0[0]);
 uniform float Width : register(b0[1]);
 uniform float Height: register(b0[2]);
-
 vs_output VSEntry(const vs_input input){
   vs_output Output;
   float4 Input = float4(input.vPosition,1);
-
   float4 ScalingVec = {1.1f,1.1f,1.1f,1};
   float4x4 OrthographicProjectionMatrix = {
     1.0f,0.0f,0.0f,0.0f,
@@ -382,9 +205,7 @@ vs_output VSEntry(const vs_input input){
   Input = RotationRoll(Input,0);
   Input.x /= (Width/Height);
   Input = mul(OrthographicProjectionMatrix,Input);
-
-  Output.vPosition = Input;
-  Output.Color =  input.Color;
+  Output.vPosition = Input; Output.Color =  input.Color;
   return Output;
 }
 \end{minted}
@@ -417,7 +238,7 @@ and outputs the surface topology and UV(W)-coordinates to the domain stage\cite{
 
 \noindent This is the cube, after tesselation:
 
-\noindent \includegraphics[height= 0.2\textheight]{Assets/Tesselator.png}
+\noindent \includegraphics[height= 0.16\textheight]{Assets/Tesselator.png}
 
 \href{https://gist.github.com/HatecrewJP/8898a51f45c2937ac1964ce53ce62eea}{Hull Shader} and 
 \href{https://gist.github.com/HatecrewJP/97633439372d09aa21b89a5f4318541a}{Domain Shader}
@@ -433,6 +254,7 @@ ConstantOutputType PatchConstantFunction(
   Output.inside = 2;	
   return Output;
 }
+
 
 [domain("tri")]
 [partitioning("pow2")]
@@ -452,7 +274,11 @@ PatchControlPoint HSEntry(
 
 
 [domain("tri")]
-DSOutput DSEntry(ConstantOutputType input, float3 UVWCoord : SV_DomainLocation, const OutputPatch<PatchControlPoint,3> patch){
+DSOutput DSEntry(
+  ConstantOutputType input, 
+  float3 UVWCoord : SV_DomainLocation, 
+  const OutputPatch<PatchControlPoint,3> patch)
+{
   DSOutput Output;
   Output.Position = UVWCoord.x * patch[0].Position + UVWCoord.y * patch[1].Position 
     + UVWCoord.z * patch[2].Position;
@@ -481,7 +307,7 @@ are invoked for each primitive coming from the previous stage\cite{HLSLGS}.
 The data from the input primitives can now be used to generate new vertices, which define the new primitives.
 The amount of generated vertices is not fixed, but a static upper limit must be defined.
 
-\noindent \includegraphics[height= 0.2\textheight]{Assets/GeometryShader.png}
+\noindent \includegraphics[height= 0.16\textheight]{Assets/GeometryShader.png}
 
 \href{https://gist.github.com/HatecrewJP/ac2ab08758fb5adff49a303aa3664ee2}{Geometry Shader}
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
@@ -539,7 +365,7 @@ There are different
 It is possible to specify if the primitives are filled or a wireframe, enabling or disabling multisampling and enabling or disabling anti-aliasing.
 More settings can be found in the \href{https://learn.microsoft.com/en-us/windows/win32/api/D3D11/ns-d3d11-d3d11_rasterizer_desc}{Direct3D reference}.
 
-\noindent \includegraphics[height= 0.2\textheight]{Assets/Rasterizer.png}
+\noindent \includegraphics[height= 0.16\textheight]{Assets/Rasterizer.png}
 
 \noindent Notice, that the color seems to be dissapearing in wireframe mode on the bottom right. This is because the rasterizer is not only deciding, which pixels are filled,
 it also does other things like interpolating between per-vertex data. The vertex on the bottom left is the same color as the background 
@@ -551,7 +377,7 @@ It is still visible in filled mode, but it's not as obvious as in wireframe mode
 After the rasterizer generated an image from the primitives, the pixel shader is invoked per-pixel and 
 combines textures, buffer data and per-vertex values\cite{HLSLPS} to calculate color- and optional depth-data of the pixel in the image.
 
-\noindent \includegraphics[height= 0.2\textheight]{Assets/PixelShader.png}
+\noindent \includegraphics[height= 0.16\textheight]{Assets/PixelShader.png}
 
 \href{https://gist.github.com/HatecrewJP/c22c3aa9650dfd28dac0e9172eba6dcd}{Pixel Shader}
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
@@ -564,6 +390,7 @@ cbuffer CBuffer : register(b0){
   float ColorB : packoffset(c2.x);
   float ColorA : packoffset(c2.y);
 };
+
 
 ps_output PSEntry(const ps_input input){
   ps_output output;
@@ -587,11 +414,11 @@ The color of the animation comes from a constant buffer. The cpu is responsible 
 
 
 \subsection{Output Merger Stage}
-
 The last graphics pipeline stage is the output merger. Its job is to generate the final pixel color\cite{HLSLOMS}, 
 by blending the color output of the pixel shader with the depth data. If no depth data is specified, the final pixel color
 is the same color as the one coming from the pixel shader.
 
+\noindent \includegraphics[height= 0.16\textheight]{Assets/PixelShader.png}
 
 \subsection{Compute Shader}
 
@@ -600,7 +427,7 @@ Instead it is possible abuse the parallel design of the gpu to perform computati
 
 \noindent Even though compute shaders are independent from the graphics pipeline, both can be used together.
 
-\noindent \includegraphics[height= 0.2\textheight]{Assets/ComputeShader.png}
+\noindent \includegraphics[height= 0.16\textheight]{Assets/ComputeShader.png}
 
 \noindent Compute shaders can be used for post-processing effects. 
 The example uses a compute shader that scales the red channel down for every pixel in the image, excluding all pixels with an rgb value of 0xffffff.
@@ -629,7 +456,7 @@ are spawned when the shader is invoked. This is done by providing three values, 
 \subsection{Final Image}
 After all these steps the image can be rendered to the screen.
 
-\includegraphics[height= 0.2\textheight]{Assets/FinalImage.png}
+\includegraphics[height= 0.16\textheight]{Assets/FinalImage.png}
 
 \section{Concepts without explanation}
 \begin{itemize}
@@ -650,9 +477,7 @@ After all these steps the image can be rendered to the screen.
   \item domain
   \item control-points
   \item subdivision
-  \item Primtive strips
   \item Depth Buffering
-  \item threads
 \end{itemize}
 
 
