@@ -1015,7 +1015,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					GlobalDeviceContext->CopyResource(GlobalFrameBuffer,GlobalCSShaderResource);
 				}
 				
-				GlobalSwapChain->Present(VsyncActive, 0);
+				GlobalSwapChain->Present(0, 0);
 				
 				if (GlobalAnimationIsActive) {
 					AnimationCount = (AnimationCount + 1) % (60);
