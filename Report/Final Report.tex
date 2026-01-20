@@ -39,9 +39,9 @@ A list of concepts that are not explained can be found at the end of this docume
 \maketitle
 
 \section{History of HLSL}
-When gpu's were introduced, each gpu required dedicated code. In 2002\cite{Direct3DGettingStarted}, Microsoft released DirectX 9.0 and with it the High Level Shader Language\cite{DirectX2003}.\@
-The goal was to provide a flexible and developer-friendly environment that abstracts the different gpu implementations\cite{DirectX2003}.
-HLSL is based on the c programming language\cite{DirectX2003} and adds additional concepts designed for gpu programming. 
+When GPU's were introduced, each GPU required dedicated code. In 2002\cite{Direct3DGettingStarted}, Microsoft released DirectX 9.0 and with it the High Level Shader Language\cite{DirectX2003}.\@
+The goal was to provide a flexible and developer-friendly environment that abstracts the different GPU implementations\cite{DirectX2003}.
+HLSL is based on the c programming language\cite{DirectX2003} and adds additional concepts designed for GPU programming. 
 The language implements multiple versions of shader models, each being an extension of the previous version\cite{HLSLShaderModel}.
 The latest shader model is the 6th version, which is used by Direct3D 12. 
 
@@ -52,7 +52,7 @@ HLSL supports various data types. Data can be stored in registers, which are mad
 \textbf{Scalar} variables use one component and are able to represent different types such as integers, floats or booleans.
 \textbf{Vectors} can use up to four components and use any of the scalar types. A \textbf{matrix} is a grid of up to four rows and colums, respectively.
 The data type of matrices can be any of the scalar types. \textbf{Structs} are a collection of data and work like c's structs.
-HLSL requires buffer objects that, which store data passed by the cpu. 
+HLSL requires buffer objects that, which store data passed by the CPU. 
 There are different types of buffer such as \textbf{cbuffer}-objects or \textbf{RWBuffer}.
 A \textbf{cbuffer} is a buffer that contains constant data, whereas \textbf{RWBuffer} is a buffer with read and write access.
 Each buffer has its own way to access the data. The identifiers in Constant Buffers can be accessed like global variables. 
@@ -69,7 +69,7 @@ RWBuffers can be accessed like an array.
   }
   cbuffer Constants{  //A buffer that stores
     float Width;      //The height and width
-    float Height;     //of a window made by the cpu
+    float Height;     //of a window made by the CPU
   }
 \end{minted}
 
@@ -90,9 +90,9 @@ If there are multiple variables with the same semantic meaning, an integer can b
 
 \section{Flow Control}
 Since HLSL is a language for GPUs, and GPUs are made for Single Instruction Multiple Data (SIMD) and parallel execution,
-flow control is different to cpu flow control.
-Branches on the cpu are simple, because comparisons operate on a single value.
-Therefore the cpu is able to use the result to choose which branch to take.
+flow control is different to CPU flow control.
+Branches on the CPU are simple, because comparisons operate on a single value.
+Therefore the CPU is able to use the result to choose which branch to take.
 Since GPUs are SIMD and operate on multiple values, branching can no longer be decided by a single value,
 since different branches would require different instructions, which does not work with SIMD.\@\cite{NvidiaFlowControl}
 Loops have to wait, until all loop conditions are equal to 0.
@@ -153,33 +153,32 @@ This section describes the Direct3D11 graphics pipeline, by looking at the state
 \noindent \includegraphics[height= 0.2\textheight]{Assets/FinalImage.png}
 
 \subsection{CPU Data}
-The process starts on the cpu. The cpu has to decide what data the GPU has to transform and in which way.
-The first step is to pass the Cube data to the gpu. This is done by creating a Vertex Buffer and an Index Buffer, 
+The process starts on the CPU. The CPU has to decide what data the GPU has to transform and in which way.
+The first step is to pass the Cube data to the GPU. This is done by creating a Vertex Buffer and an Index Buffer, 
 that contain the necessary information for the input assembler. 
-The cpu is responsible for setting the shaders and resources for each stage.
-The \href{https://gist.github.com/HatecrewJP/04172ef23d3d41105c84c74415379846}{vertex and index data}, passed by the cpu, describes 8 vertices and 12 triangles, which describe the cube.
+The \href{https://gist.github.com/HatecrewJP/04172ef23d3d41105c84c74415379846}{vertex and index data}, passed by the CPU, describes 8 vertices and 12 triangles.
 
-
-\subsection{Input Assembler Stage}
-The input assembler(IA) stage is responsible for transforming the vertices and indices into primitives, that can be processed. Primives can be points, lines or triangles.
-The primitive topology can be set by the cpu. The tesslation stage is the only stage that requires a specific topology. It requires patchlist topologies.
-To actually see  what the stages before the tesselation stage do to the vertices in the example, a trianglelist topology is used. 
-Since the topology doesn't change the output of the stages before the tesselation stage, a different topology can be used to properly visualize the stages before.
 
 \subsection{Required Pipeline Stages}
-To see an image from the data that has been passed to the cpu, a few pipeline stages must be active\cite{HLSLVS}.
-In the cube example input assembler, vertex shader, rasterizer and pixel shader are active. The shaders only pass the data to the next stage without modifying it.
+To see an image from the data that has been passed to the CPU, a few pipeline stages are required to be active\cite{HLSLVS}.
+In the cube example the input assembler, vertex shader, rasterizer and pixel shader are active. The shaders are set to only pass the data to the next stage, without modifying it.
 
-\noindent This is the output with the IA stage and only passing through data.
+\subsection{Input Assembler Stage}
+The input assembler stage(IA) receives the index and vertex buffers from the CPU. It then uses these buffers to create \href{https://en.wikipedia.org/wiki/Geometric_primitive}{primitves} (shapes).
+Primitves are described by vertices. To find the vertices for a primitve, the IA reads consecutive indices from the index buffer. 
+The indices point to vertices in the vertex buffer and allow the IA to get the correct vertices. 
+When all indices are processed, the primitives are passed to the vertex shader stage. 
+
+\noindent This is the output of the input assembler and only passing the data through the other stages.
 
 \noindent \includegraphics[height= 0.16\textheight]{Assets/PassThrough.png}
 
 \subsection{Vertex Shader Stage}
-The vertex shader stage is the first stage after the input assembler stage. It is responsible for placing the primitves at the correct position on the screen.
-This stage is where rotations, scaling and translations or per-vertex lighting happens. The vertex shader is executed for every vertex passed from the input assembler\cite{HLSLVS}, 
+The vertex shader stage is the first stage after the input assembler stage and operates on the vertices of the primitives. It is responsible for placing the vertices at the correct position on the screen.
+This stage is where rotations, scaling and translations happen. The vertex shader is executed for every vertex passed by the input assembler\cite{HLSLVS}, 
 but operates only at one at a time. 
 
-\noindent This is the stage, where the cube is being rotated and scaled down and the projected with an orthographic projection.
+\noindent This is the stage, where the cube is being rotated and scaled down and then projected with an orthographic projection.
 
 \noindent \includegraphics[height= 0.16\textheight]{Assets/VertexShader.png}
 
@@ -222,7 +221,7 @@ Without line 22, the cube would be streched along the x-axis. To compensate for 
 \noindent Line 23 is interesting, because it is using an intrinsic. The \textbf{mul} intrinsic has to be used for efficient matrix multiplication.
 
 
-\subsection{Tesselation Stages}
+\subsection{Tessellation Stages}
 The tesselation stages enable hardware subdivision, which can be used to adjust the level of detail of a primitive.
 There are three stages, which must all be enabled concurrently: The hull shader stage, the tesselation stage and the domain shader stage.
 
@@ -230,13 +229,13 @@ There are three stages, which must all be enabled concurrently: The hull shader 
 Now the are two phases done by the hull shader stage in parallel\cite{HLSLTess}: One phase is generating control-points for a patch from the control points, based on a specified geometry.
 The other phase is generating additional data, patch-constant data, for the patch, which determines how the patch is subdivided.
 
-\noindent Next is the \textbf{Tesselator Stage}, which cannot be programmed. It takes the patch generated by the hull shader and the patch-constant data as input 
+\noindent Next is the \textbf{Tessellator Stage}, which cannot be programmed. It takes the patch generated by the hull shader and the patch-constant data as input 
 and outputs the surface topology and UV(W)-coordinates to the domain stage\cite{HLSLTess}.
 
 
-\noindent The \textbf{Domain Shader Stage} is responsible for calculating the positions of the new vertices based on the patch from the hull shader and the UV(W)-coordinates from the tesselator.
+\noindent The \textbf{Domain Shader Stage} is responsible for calculating the positions of the new vertices based on the patch from the hull shader and the UV(W)-coordinates from the tessellator.
 
-\noindent This is the cube, after tesselation:
+\noindent This is the cube, after tessellation:
 
 \noindent \includegraphics[height= 0.16\textheight]{Assets/Tesselator.png}
 
@@ -288,7 +287,7 @@ DSOutput DSEntry(
   return Output;
 }
 \end{minted}
- 
+
 \noindent The hull shader provides two functions. The patch-constant function, which generates the patch-constant data, 
 and the main function, which generates the control-points for the patch.
 
@@ -361,7 +360,7 @@ There are different
 \href{https://learn.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-rasterizer-stage-rules}
 {rasterization rules}, depending on the primitve type, multisampling and anti-aliasing.
 
-\noindent The rasterizer cannot be programmed with a shader like the other stages, but some settings can be set by the cpu.
+\noindent The rasterizer cannot be programmed with a shader like the other stages, but some settings can be set by the CPU.
 It is possible to specify if the primitives are filled or a wireframe, enabling or disabling multisampling and enabling or disabling anti-aliasing.
 More settings can be found in the \href{https://learn.microsoft.com/en-us/windows/win32/api/D3D11/ns-d3d11-d3d11_rasterizer_desc}{Direct3D reference}.
 
@@ -408,7 +407,7 @@ ps_output PSEntry(const ps_input input){
 \end{minted}
 
 \noindent The pixel shader animates all pixels, where the red channel is equal to 1 or 0;
-The color of the animation comes from a constant buffer. The cpu is responsible for updating the color. 
+The color of the animation comes from a constant buffer. The CPU is responsible for updating the color. 
 
 \noindent Notice that the variables in the constant buffer can be used like global variables.
 
@@ -423,7 +422,7 @@ is the same color as the one coming from the pixel shader.
 \subsection{Compute Shader}
 
 Direct3D11 introduced computer shaders. These shaders are general purpose shaders, which are no part of the graphics pipeline.
-Instead it is possible abuse the parallel design of the gpu to perform computations on the gpu, which aren't necessarily graphics related.
+Instead it is possible abuse the parallel design of the GPU to perform computations on the GPU, which aren't necessarily graphics related.
 
 \noindent Even though compute shaders are independent from the graphics pipeline, both can be used together.
 
