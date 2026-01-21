@@ -48,30 +48,114 @@ The latest shader model is the 6th version, which is used by Direct3D 12.
 
 
 \section{Data Types}
-HLSL supports various data types. Data can be stored in registers, which are made of four 32-bit components.
-\textbf{Scalar} variables use one component and are able to represent different types such as integers, floats or booleans.
-\textbf{Vectors} can use up to four components and use any of the scalar types. A \textbf{matrix} is a grid of up to four rows and colums, respectively.
-The data type of matrices can be any of the scalar types. \textbf{Structs} are a collection of data and work like c's structs.
-HLSL requires buffer objects that, which store data passed by the CPU. 
-There are different types of buffer such as \textbf{cbuffer}-objects or \textbf{RWBuffer}.
-A \textbf{cbuffer} is a buffer that contains constant data, whereas \textbf{RWBuffer} is a buffer with read and write access.
-Each buffer has its own way to access the data. The identifiers in Constant Buffers can be accessed like global variables. 
-RWBuffers can be accessed like an array.
+HLSL supports various data types. This section gives an overview over the different Data Types.
+
+\subsection{Scalar}
+Scalar variables use a single component of a register. There are different kinds of scalar data types. Standard types like 
+integer, signed and unsigned, floating points or bools are available. There are also less common types like snorm or unorm. 
+These are normalized floating point numbers. A snorm can take any value from the intervall [-1,1] and unorm can take values in the intervall [0,1].
+Unorm is often used to display colors.
+
+\noindent \textit{Example:}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+uint   AnUnsignedInteger;
+double ADoublePrecisionFloatingPoint;
+unorm  AnUnsignedNormalizedFloatingPoint;
+\end{minted}
+
+
+\subsection{Vector}
+Vectors are variables that use up to 4 components\cite{HLSLVector}. The type can be any of the scalar data types. A vector can be declared in two ways:
+
+Declaration with a template: \colorbox{bg}{\textbf{vector}<Type, Components = [1,4]>}
+
+\noindent \textit{Example:}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+//A four component float
+vector<float, 4> ColorRGBA;
+
+//A single component float, the same as a scalar float
+vector<float, 1> RotationAngle; 
+\end{minted}
+
+Declaration as a type: \colorbox{bg}{\textbf{float[n]}, where n is a number in the intervall [1,4].}
 
 \noindent \textit{Examples:}
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-  float AScalarFloat;
-  uint3 A3ComponentUnsignedIntegerVector;
-  int2x2 A2by2SignedIntegerMatrix
-  struct Coordinate2D{  //A struct representing
-    float x;            //a 2D float Coordinate 
-    float y;            
-  }
-  cbuffer Constants{  //A buffer that stores
-    float Width;      //The height and width
-    float Height;     //of a window made by the CPU
-  }
+float4 vPosition :SV_Position;
+float4 Color : COLOR;
+float3 Normal : NORMAL;
 \end{minted}
+
+\noindent Accessing a component can be done by using the structure operator ``\textbf{.}''\cite{HLSLComponentMath} followd by the letters xyzw or rgba.
+
+\noindent\textit{Examples:}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+Vector2.xy  //acceses the first and second component
+Vector3.rgb //acceses the first second and third component
+Vector4.yzw //accesses the second, third and fourth component
+\end{minted}
+
+\noindent The letters \textit{xyzw} or \textit{rgba} correspond to the components of a Vector.
+
+
+\subsection{Matrix}
+Matrices are two dimensional grids made of scalar components\cite{HLSLMatrix}. HLSL allows matrices with one to four columns and rows respectively.
+
+\noindent Like Vectors, there are two ways of declaring matrices:
+
+Template Declaration:\colorbox{bg}{\textbf{matrix}<Type, Rows = [1,4], Cols = [1,4]>}
+
+Type Declaration:\colorbox{bg}{Type[Rows]x[Columns]}
+
+\noindent \textit{Examples:}
+
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+//A 4 by 4 Matrix
+float4x4 RollRotationMatrix = {
+1.0f,0.0f,0.0f,0.0f,
+0.0f,cos(RadAngle),-sin(RadAngle),0.0f,
+0.0f,sin(RadAngle),cos(RadAngle),0.0f,
+0.0f,0.0f,0.0f,1.0f};
+
+//A 3 by 2 matrix, initialized with 0
+int3x2 Matrix = {}; 
+
+//A 3 by 3 uint matrix
+matrix<uint,3,3> Mat3x3 
+\end{minted}
+
+\noindent Accessing a component of a matrix can be done multiple ways using the structure operator ``\textbf{.}''\cite{HLSLComponentMath}. One way to index a component is \_mRC, where R and C correspond to Row/Column indices\cite{HLSLComponentMath}.
+
+\noindent \textit{Example:}
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+//Accesses the first row of the RollRotationMatrix
+float4 FirstRow = RollRotationMatrix._m00_m01_m02_m03; 
+\end{minted}
+
+\subsection{Buffers}
+A pipeline stage might need need more than the vertex data to calculate the output. This is where buffer objects are used. 
+Each pipeline stage is able to reference a fixed amount of buffers. There are multiple types of buffers. 
+There are structured buffers which store multiple instances of a struct or constant buffers that store data, which is constant during the shader execution.
+Compute Shaders require buffers with unordered acces, which allows read and write access from multiple threads.
+
+\noindent Even though buffers look similar to structs, they are different.
+Structs are used to group data within a shader, whereas buffers containt data coming from the CPU.\@
+
+\noindent \textit{Examples:} 
+\begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
+RWTexture2D <float4> AReadWriteTextureBuffer;
+//The Buffer stores instances of the struct T
+StructuredBuffer<T> AStructuredBuffer; 
+cbuffer AConstantBuffer{                          
+  float RotationAngle;
+  float Width;
+  float Height;
+};
+\end{minted}
+
+\subsection{Struct}
+A Struct is a collection of data grouped together in memory and works like a struct in c.
 
 \section{Semantics}
 Semantics are Strings attached to the input and output variables of shaders\cite{HLSLSemantic}.
@@ -96,19 +180,8 @@ Therefore the CPU is able to use the result to choose which branch to take.
 Since GPUs are SIMD and operate on multiple values, branching can no longer be decided by a single value,
 since different branches would require different instructions, which does not work with SIMD.\@\cite{NvidiaFlowControl}
 Loops have to wait, until all loop conditions are equal to 0.
-HLSL uses c's flow control syntax, but adds additional options to it.
+HLSL uses c's flow control syntax, but adds additional options to it, which can specify how a branch is evaluated.
 
-\noindent The keywords are:
-\begin{itemize}
-\item\textbf{if}
-\item\textbf{switch}
-\item\textbf{do}
-\item\textbf{while}
-\item\textbf{for}
-\item\textbf{break}
-\item\textbf{continue}
-\item\textbf{discard}
-\end{itemize}
 
 \noindent The \textbf{discard} keyword is added by HLSL.\@ It can only be used in a pixel shader. 
 If a discard statement is executed, the shader will not output the result of the pixel\cite{HLSLDiscard}.
@@ -128,14 +201,7 @@ If a discard statement is executed, the shader will not output the result of the
 \end{itemize}
 
 
-\section{Intrinsics}
-Intrinsic functions are functions, that map directly to Assembly instructions.\\
-Common examples are:
-\begin{itemize}
-\item\textbf{dot}: Calculates the dot product of two vectors
-\item\textbf{mul}: Matrix multiplication
-\item\textbf{cos}: Calculates the cosine
-\end{itemize}
+
 
 \section{Shader Models}
 Shader Models specify, which features can be used in shaders.
