@@ -3,6 +3,7 @@
 \usepackage{minted}
 \usepackage{hyperref}
 \usepackage{multirow}
+\usepackage{subcaption}
 \begin{comment}
   TODO: 
   -reduce page count?
@@ -26,14 +27,13 @@
 
 This document is an introduction to the shading language HLSL, made for the course ``Seminar Modern Programming Languages'' at Ruhr-University Bochum 2025/2026.
 It starts with a brief look at the history of HLSL, which explains the purpose of the language.
-Following this, are explanations of HLSL concepts including data types, semantics, flow control and shader models.
+Following this, are explanations of HLSL concepts, including data types, semantics and flow control.
 The last part is about the graphics pipeline. The pipeline stages are explained by looking at an animated cube and
 observing the changes made by each stage. Each stage includes a brief explanation of the stage, a frame of the cube and 
 a snippet of the shader code.
 
 \noindent It is possible, that some concepts mentionend are not further explained or details are omitted, because they would go beyond the scope of this course. 
-A list of concepts that are not explained can be found at the end of this document.
-
+Concepts that are not explained, can be found in the conclusion.
 \end{abstract}
 
 \maketitle
@@ -100,34 +100,25 @@ Vector4.yzw //accesses the second, third and fourth component
 Matrices are two dimensional grids made of scalar components\cite{HLSLMatrix}. 
 HLSL allows matrices with one to four columns and rows, respectively.
 A single component of a matrix can be accessed with \verb|._mRC|, where R and C denote the positions inside the matrix.
-\noindent Like Vectors, there are two ways of declaring matrices:
 
-Template Declaration:\colorbox{bg}{\textbf{matrix}<Type, Rows = [1,4], Cols = [1,4]>}
-
-Type Declaration:\colorbox{bg}{Type[Rows]x[Columns]}
+Declaration of Matrices:\colorbox{bg}{Type[Rows]x[Columns]}
 
 \noindent \textit{Examples:}
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-//A 4 by 4 Matrix
-float4x4 RollRotationMatrix = {
-1.0f,0.0f,0.0f,0.0f,
-0.0f,cos(RadAngle),-sin(RadAngle),0.0f,
-0.0f,sin(RadAngle),cos(RadAngle),0.0f,
-0.0f,0.0f,0.0f,1.0f};
-
-//A 3 by 2 matrix, initialized with 0
-int3x2 Matrix = {}; 
-
-//A 3 by 3 uint matrix
-matrix<uint,3,3> Mat3x3;
-
-//Accesses the first row of the RollRotationMatrix
+float4x4 RollRotationMatrix = {   //A 4 by 4 Matrix
+  1.0f,0.0f,0.0f,0.0f,
+  0.0f,cos(RadAngle),-sin(RadAngle),0.0f,
+  0.0f,sin(RadAngle),cos(RadAngle),0.0f,
+  0.0f,0.0f,0.0f,1.0f};
+matrix<uint,3,3> AnUnsignedInt3x3Matrix;
 float4 FirstRow = RollRotationMatrix._m00_m01_m02_m03; 
 \end{minted}
 
 
 \subsection{Buffers}
-A pipeline stage might need need more than the vertex data, to calculate the output. This is where buffer objects are used. 
+A pipeline stage might need need more than the vertex data, to calculate the output.
+The GPU often has its own dedicated memory, which is not directly accessible by the CPU.\@ The GPU is responsible for fetching the data from the CPU and write it into its own memory.
+At this point buffer objects are used to access this data.
 Each pipeline stage is able to reference a fixed amount of buffers. There are multiple types of buffers. 
 There are structured buffers, which store multiple instances of a struct, or constant buffers that store data, which is constant during the shader execution.
 Compute Shaders require buffers with unordered acces, which allows read and write access from multiple threads.
@@ -157,12 +148,9 @@ If there are multiple variables with the same semantic meaning, an integer can b
 
 \noindent \textit{Examples:}
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-  //Position is treated as a Vertex Position.
-  float4 Position : POSITION; 
-  //vPosition is treated as a Pixel Location. 
-  float2 vPosition : VPOS;    
-  //Color is treated as a Color.
-  float3 Color : COLOR1;      
+  float4 Position : POSITION; //Position is treated as a Vertex Position.
+  float2 vPosition : VPOS;    //vPosition is treated as a Pixel Location. 
+  float3 Color : COLOR1;      //Color is treated as a Color.
 \end{minted}
 
 \section{Flow Control}
@@ -192,18 +180,6 @@ If a discard statement is executed, the shader will not output the result of the
   \item \textbf{flatten}: Executes the \textit{true} and \textit{false} side of the if-statement and decides, which one use, based on the condition\cite{HLSLif}. 
 \end{itemize}
 
-
-
-
-\section{Shader Models}
-Shader Models specify, which features can be used in shaders.
-New Shader Models introduce new features or adjust existing features.
-Each Shader Model specifies Shader Profiles\cite{HLSLShaderModel}, which are used by the compiler to determine which features can be used.
-Every shader type has its own shader profile, available in different versions.
-
-\noindent \textit{Example:}
-
-Shader Model 4 introduced the shader profiles cs\_4\_0 and cs\_4\_1. Both profiles are for compute shaders.
 \section{Graphics Pipeline}
 The picture on the left shows an example output of a cube made with the graphics pipeline.
 This section introduces the Direct3D11 graphics pipeline and shows how the stages were used to produce the example.
@@ -211,11 +187,13 @@ The diagram on the right illustrates the Direct3D11 pipeline and the order in wh
 
 \noindent \includegraphics[height=0.16\textheight]{Assets/FinalImage.png} \includegraphics[height=0.2\textheight]{Assets/D3D11-Pipeline-Stages.png}
 
+
 \subsection{CPU Data}
 The process starts on the CPU.\@ The CPU has to decide what data the GPU has to transform and in which way.
 The first step is to pass the data of the cube to the GPU.\@ This is done by creating a Vertex Buffer and an Index Buffer, 
 which contain the necessary information for the input assembler. 
-The \href{https://gist.github.com/HatecrewJP/04172ef23d3d41105c84c74415379846}{vertex and index data}, passed by the CPU, describes 8 vertices and 12 triangles.
+The \href{https://gist.github.com/HatecrewJP/04172ef23d3d41105c84c74415379846}{vertex and index data}, passed by the CPU, describes 8 vertices and 12 triangles. 
+Each vertex containts a position and a color.
 
 
 \subsection{Required Pipeline Stages}
@@ -232,14 +210,16 @@ When all indices are processed, the primitives are passed to the vertex shader s
 
 \noindent \includegraphics[height= 0.16\textheight]{Assets/PassThrough.png}
 
+
 \subsection{Vertex Shader Stage}
 The vertex shader stage is the first stage after the input assembler stage and operates on the vertices of the primitives. At that stage, the final positions of the vertices can be calculated.
 This stage is where rotations, scaling and translations happen. The vertex shader is executed for every vertex passed by the input assembler\cite{HLSLVS}, 
 but operates only at one at a time. 
 
-\noindent This is the stage, where the cube is being rotated and scaled down and then projected with an orthographic projection.
+\noindent This is the stage, where the cube is being rotated, scaled down and then projected with an orthographic projection.  
 
 \noindent \includegraphics[height= 0.16\textheight]{Assets/VertexShader.png}
+
 
 \href{https://gist.github.com/HatecrewJP/1a5f491b23e5101acf1bc5c783f65ece}{VertexShader}
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
@@ -282,7 +262,7 @@ The \textbf{mul} intrinsic has to be used for efficient matrix multiplication.
 
 \noindent The main functions of shaders specify, which data is required from the previous stage. 
 The return value of the main function is, what is passed to the next stage. If a single value is required by the following stage, it's sufficient to simply return this value.
-Everytime more than a single value is required, the function has to return a struct with the data.
+Everytime more than a single value is required, the function has to return a struct with the data. In the example, the new position and the input color are passed to the next stage.
 
 
 
@@ -297,11 +277,12 @@ It takes a patch as input and outputs control points, which are used by the doma
 \noindent The \textbf{tessellator} stage takes the patch-constant data and calculates UV(W) values. Each UV(W) value can be used by the domain shader to create a new vertex.
 
 \noindent The \textbf{domain shader} stage combines the control points from the hull shader and the UV(W)-values from the tessellator.
-By interpolating betweeen control points with the UV(W)-values, new vertices can be created.
-
+By interpolating betweeen control points with the UV(W)-values, new vertices can be created. 
+The UV(W)-values are often used to calculate new vertex positions, but it is also possible to calculate a color using these values. 
 \noindent This is the cube, after tessellation:
 
 \noindent \includegraphics[height= 0.16\textheight]{Assets/Tesselator.png}
+
 
 \href{https://gist.github.com/HatecrewJP/8898a51f45c2937ac1964ce53ce62eea}{Hull Shader} and 
 \href{https://gist.github.com/HatecrewJP/97633439372d09aa21b89a5f4318541a}{Domain Shader}
@@ -331,6 +312,7 @@ PatchControlPoint HSEntry(
 	return Output;
 }
 
+
 [domain("tri")]
 DSOutput DSEntry(
   ConstantOutputType input, 
@@ -350,7 +332,7 @@ DSOutput DSEntry(
 \noindent The hull shader provides two functions. The patch-constant function, which generates the patch-constant data, 
 and the main function, which generates the control-points for the patch.
 
-\noindent The main function of the domain shader calculates the new vertices.
+\noindent The main function of the domain shader calculates the new vertices, which contain a position and a color.
 
 \noindent Before each main function, properties must be declared within square brackets.
 The hull shader nees to know which shape of the patch, how many control points it should output and which function is used to calculate the patch-constant data.
@@ -364,6 +346,7 @@ The amount of generated vertices is not fixed, but a static upper limit must be 
 
 \noindent \includegraphics[height= 0.16\textheight]{Assets/GeometryShader.png}
 
+
 \href{https://gist.github.com/HatecrewJP/ac2ab08758fb5adff49a303aa3664ee2}{Geometry Shader}
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
 [maxvertexcount(9)]
@@ -375,8 +358,8 @@ void GSEntry(
     + InputTri[2].Position)/3.0f;
   float4 MidPointColor = float4(InputTri[0].Color + InputTri[1].Color 
     + InputTri[2].Color)/3.0f;
-
   GSOutput Output;
+
   Output.Pos = InputTri[0].Position;
   Output.Color = InputTri[0].Color;
   OutStream.Append(Output);
@@ -390,7 +373,7 @@ void GSEntry(
 }
 \end{minted}
 
-\noindent The geometry shaders way of outputting data is different than the other stages. 
+\noindent The geometry shaders way of outputting data is different than in other stages. 
 Instead of returning a value, it takes a stream as input and outputs the new primitives on the stream.
 
 \noindent The geometry shader divides the cube even further.
@@ -409,11 +392,22 @@ There are different
 \href{https://learn.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-rasterizer-stage-rules}
 {rasterization rules}, depending on the primitve type, multisampling and anti-aliasing.
 
-\noindent The rasterizer cannot be programmed with a shader like the other stages, but some settings can be set by the CPU.
+\noindent The rasterizer cannot be programmed with a shader like the other stages, but some settings can be set by the CPU.\@
 It is possible to specify if the primitives are filled or a wireframe, enabling or disabling multisampling and enabling or disabling anti-aliasing.
 More settings can be found in the \href{https://learn.microsoft.com/en-us/windows/win32/api/D3D11/ns-d3d11-d3d11_rasterizer_desc}{Direct3D reference}.
+\begin{figure}[h]
+  \begin{minipage}{.49\textwidth}
+    \includegraphics[height= 0.16\textheight]{Assets/GeometryShader.png}
 
-\noindent \includegraphics[height= 0.16\textheight]{Assets/Rasterizer.png}
+    \hspace{1.5cm}\textit{Rasterizer set to wireframe}
+  \end{minipage}
+  \begin{minipage}{0.49\textwidth}
+    \includegraphics[height= 0.16\textheight]{Assets/Rasterizer.png}
+
+    \hspace{2cm}\textit{Rasterizer set to fill}
+  \end{minipage}
+\end{figure}
+
 
 \noindent Notice, that the color seems to be dissapearing in wireframe mode on the bottom right. This is because the rasterizer is not only deciding, which pixels are filled,
 it also does other things like interpolating between per-vertex data. The vertex on the bottom left is the same color as the background 
@@ -422,7 +416,7 @@ It is still visible in filled mode, but it's not as obvious as in wireframe mode
 
 
 \subsection{Pixel Shader Stage}
-After the rasterizer generated an image from the primitives, the pixel shader is invoked per-pixel and 
+After the rasterizer generated an image from the primitives, the pixel shader is invoked for each pixel and 
 combines textures, buffer data and per-vertex values\cite{HLSLPS} to calculate color- and optional depth-data of the pixel in the image.
 
 \noindent \includegraphics[height= 0.16\textheight]{Assets/PixelShader.png}
@@ -442,16 +436,17 @@ ps_output PSEntry(const ps_input input){
 }
 \end{minted}
 
-\noindent The pixel shader animates all pixels, where the red channel is equal to 1 or 0;
+\noindent This pixel shader animates all pixels, where the red channel is equal to 1 or 0;
 The color of the animation comes from a constant buffer. The CPU is responsible for updating the color. 
 
 \noindent Notice, that the ColorX variables are from the constant buffer and can be used like global variables.
 
-
 \subsection{Output Merger Stage}
 The last graphics pipeline stage is the output merger. Its job is to generate the final pixel color\cite{HLSLOMS}, 
 by blending the color output of the pixel shader with the depth data. If no depth data is specified, the final pixel color
-is the same color as the one coming from the pixel shader.
+is the same color, as the one coming from the pixel shader.
+
+\noindent This is the image after the output merger stage:
 
 \noindent \includegraphics[height= 0.16\textheight]{Assets/PixelShader.png}
 
@@ -475,11 +470,9 @@ RWTexture2D <unorm float4> SwapChainImageCopy : register(u0);
 void CSEntry(uint3 GroupID: SV_GroupID){
   uint2 Coordinate = uint2(GroupID.x,GroupID.y);
   float4 Color = SwapChainImageCopy[Coordinate];
-
   if(distance(Color.xyz,float3(1,1,1)) != 0){
     Color.r *= 0.7f;
   }
-
   SwapChainImageCopy[Coordinate] = Color;
 }
 \end{minted}
@@ -493,27 +486,19 @@ After all these steps the image can be rendered to the screen.
 
 \includegraphics[height= 0.16\textheight]{Assets/FinalImage.png}
 
-\section{Concepts without explanation}
+
+\section{Conclusion}
+This introduction gives a broad overview of HLSL's data types, semantics, flow control and the graphics pipeline.
+However, there are topics that couldn't be introduced, but are valuable for a deeper undestanding of HLSL and the graphics pipeline.
+
+\noindent Here are some topics that were either briefly or not explained:
+
 \begin{itemize}
-  \item Primitve Topology
-  \item GPU Registers
-  \item SIMD
-  \item primitives
-  \item multisampling
-  \item anti-aliasing
-  \item interpolation
-  \item per-vertex data
-  \item translation
-  \item per-vertex lighting
-  \item render pass
-  \item normalized data
-  \item Aspect Ratio
-  \item UV-coordinates
-  \item domain
-  \item control-points
-  \item subdivision
-  \item Depth Buffering
+  \item GPU architecture: GPU registers, SIMD
+  \item Computer Graphics Concepts: anti-aliasing, primitve topology, UV-Coordinates, subdivision, Depth Buffering, multisampling, interpolation
+  \item miscellaneuos: control-points, render pass, normalized data, domain, aspect ratio
 \end{itemize}
+
 
 
 \bibliographystyle{ACM-Reference-Format}
