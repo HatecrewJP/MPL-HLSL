@@ -245,7 +245,7 @@ internal IDXGISwapChain1* Win32GetSwapChain(
 	SwapChainDesc1.SampleDesc = SampleDesc;
 	SwapChainDesc1.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	SwapChainDesc1.BufferCount = 2;
-	SwapChainDesc1.Scaling = DXGI_SCALING_NONE;
+	SwapChainDesc1.Scaling = DXGI_SCALING_ASPECT_RATIO_STRETCH;
 	SwapChainDesc1.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 	SwapChainDesc1.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	SwapChainDesc1.Flags = 0;

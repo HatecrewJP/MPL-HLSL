@@ -27,7 +27,7 @@
 
 This document is an introduction to the shading language HLSL, made for the course ``Seminar Modern Programming Languages'' at Ruhr-University Bochum 2025/2026.
 It starts with a brief look at the history of HLSL, which explains the purpose of the language.
-Following this, are explanations of HLSL concepts, including data types, semantics and flow control.
+Following this are explanations of HLSL concepts, including data types, semantics and flow control.
 The last part is about the graphics pipeline. The pipeline stages are explained by looking at an animated cube and
 observing the changes made by each stage. Each stage includes a brief explanation of the stage, a frame of the cube and 
 a snippet of the shader code.
@@ -52,15 +52,15 @@ HLSL supports various data types. This section gives an overview over the differ
 
 \subsection{Scalar}
 Scalar variables use a single component of a register. There are different kinds of scalar data types. Standard types like 
-integer, signed and unsigned, floating points or bools are available. There are also less common types like snorm float or unorm float. 
-These are normalized floating point numbers. A snorm float can take any value from the intervall [-1,1] and unorm float can take values in the intervall [0,1].
+integer, signed and unsigned, floating points and bools are available. There are also less common types like snorm float or unorm float. 
+These are normalized floating point numbers. A snorm float can take any value in the intervall [-1,1] and unorm float can take values in the intervall [0,1].
 Unorm floats are often used for colors.
 
 \noindent \textit{Example:}
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
 uint   AnUnsignedInteger;
 double ADoublePrecisionFloatingPoint;
-unorm  AnUnsignedNormalizedFloatingPoint;
+unorm float AnUnsignedNormalizedFloatingPoint;
 \end{minted}
 
 
@@ -79,17 +79,17 @@ vector<float, 1> ASingleComponentFloat; //Equal to a scalar float
 
 \noindent \textit{Examples:}
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-float4 vPosition :SV_Position;
-float4 Color : COLOR;
-float3 Normal : NORMAL;
+float4 vPosition;
+float4 Color;
+float3 Normal;
 \end{minted}
 
-\noindent Accessing a component can be done by using the structure operator ``\textbf{.}''\cite{HLSLComponentMath} followd by the letters xyzw or rgba.
+\noindent Accessing a component can be done by using the structure operator ``\textbf{.}''\cite{HLSLComponentMath} followed by the letters xyzw or rgba.
 
 \noindent\textit{Examples:}
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
-Vector2.xy  //acceses the first and second component
-Vector3.rgb //acceses the first second and third component
+Vector2.xy  //accesses the first and second component
+Vector3.rgb //accesses the first second and third component
 Vector4.yzw //accesses the second, third and fourth component
 \end{minted}
 
@@ -99,7 +99,7 @@ Vector4.yzw //accesses the second, third and fourth component
 \subsection{Matrix}
 Matrices are two dimensional grids made of scalar components\cite{HLSLMatrix}. 
 HLSL allows matrices with one to four columns and rows, respectively.
-A single component of a matrix can be accessed with \verb|._mRC|, where R and C denote the positions inside the matrix.
+A single component of a matrix can be accessed with ``\verb|._mRC|'', where R and C denote the positions inside the matrix.
 
 Declaration of Matrices:\colorbox{bg}{Type[Rows]x[Columns]}
 
@@ -116,15 +116,15 @@ float4 FirstRow = RollRotationMatrix._m00_m01_m02_m03;
 
 
 \subsection{Buffers}
-A pipeline stage might need need more than the vertex data, to calculate the output.
-The GPU often has its own dedicated memory, which is not directly accessible by the CPU.\@ The GPU is responsible for fetching the data from the CPU and write it into its own memory.
-At this point buffer objects are used to access this data.
+A pipeline stage might need more than the vertex data to calculate the output.
+The GPU often has its own, dedicated memory, which is not directly accessible by the CPU.\@ The GPU is responsible for fetching the data from the CPU and write it into its own memory.
+At this point, buffer objects are used to access this data.
 Each pipeline stage is able to reference a fixed amount of buffers. There are multiple types of buffers. 
-There are structured buffers, which store multiple instances of a struct, or constant buffers that store data, which is constant during the shader execution.
+There are structured buffers, which store multiple instances of a struct, or constant buffers, that store data, which is constant during the shader execution.
 Compute Shaders require buffers with unordered acces, which allows read and write access from multiple threads.
 
 \noindent Even though buffers look similar to structs, they are different.
-Structs are used to group data within a shader, whereas buffers containt data coming from the CPU.\@
+Structs are used to group data within a shader, whereas buffers contain data coming from the CPU.\@
 
 \noindent \textit{Examples:} 
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg]{hlsl}
@@ -139,11 +139,11 @@ cbuffer AConstantBuffer{
 \end{minted}
 
 \subsection{Struct}
-A Struct is a collection of data grouped together in memory and works like a struct in c.
+A struct is a collection of data, grouped together in memory, and works like a struct in c.
 
 \section{Semantics}
-Semantics are Strings attached to the input and output variables of shaders\cite{HLSLSemantic}.
-These Strings are used by the graphics pipeline to identify the meaning of the variable.
+Semantics are strings attached to the input and output variables of shaders\cite{HLSLSemantic}.
+These strings are used by the graphics pipeline to identify the meaning of the variable.
 If there are multiple variables with the same semantic meaning, an integer can be appended to the semantic.
 
 \noindent \textit{Examples:}
@@ -154,11 +154,11 @@ If there are multiple variables with the same semantic meaning, an integer can b
 \end{minted}
 
 \section{Flow Control}
-Since HLSL is a language for GPUs, and GPUs are made for Single Instruction Multiple Data (SIMD) and parallel execution,
-flow control is different to CPU flow control.
+HLSL is a language for GPUs. GPUs are made for Single Instruction Multiple Data (SIMD) and parallel execution.
+This makes the flow control different to CPU flow control.
 Branches on the CPU are simple, because comparisons operate on a single value.
-Therefore the CPU is able to use the result to choose which branch to take.
-Since GPUs are SIMD and operate on multiple values, branching can no longer be decided by a single value,
+Therefore, the CPU is able to use the result to choose which branch to take.
+Since GPUs are SIMD and operate on multiple values. Branching can no longer be decided by a single value,
 since different branches would require different instructions, which does not work with SIMD.\@\cite{NvidiaFlowControl}
 Loops have to wait, until all loop conditions are equal to 0.
 HLSL uses c's flow control syntax, but adds additional options to it, which can specify how a branch is evaluated.
@@ -177,12 +177,12 @@ If a discard statement is executed, the shader will not output the result of the
 \begin{itemize}
   \item \textbf{branch}: Executes only one side, depending on the condition\cite{HLSLif}.
 
-  \item \textbf{flatten}: Executes the \textit{true} and \textit{false} side of the if-statement and decides, which one use, based on the condition\cite{HLSLif}. 
+  \item \textbf{flatten}: Executes the \textit{true} and \textit{false} side of the if-statement and decides, which one to use, based on the condition\cite{HLSLif}. 
 \end{itemize}
 
 \section{Graphics Pipeline}
 The picture on the left shows an example output of a cube made with the graphics pipeline.
-This section introduces the Direct3D11 graphics pipeline and shows how the stages were used to produce the example.
+This section introduces the Direct3D11 graphics pipeline and shows, how the stages were used to produce the example.
 The diagram on the right illustrates the Direct3D11 pipeline and the order in which the data passes the stages.
 
 \noindent \includegraphics[height=0.16\textheight]{Assets/FinalImage.png} \includegraphics[height=0.2\textheight]{Assets/D3D11-Pipeline-Stages.png}
@@ -197,7 +197,7 @@ Each vertex containts a position and a color.
 
 
 \subsection{Required Pipeline Stages}
-To see an image from the data, that has been passed to the CPU, a few pipeline stages are required to be active\cite{HLSLVS}.
+To see an image from the data that has been passed to the CPU, a few pipeline stages are required to be active\cite{HLSLVS}.
 In the cube example, the input assembler, vertex shader, rasterizer and pixel shader are active. At that point, the shaders only pass the data to the next stage, without modifying it.
 
 \subsection{Input Assembler Stage}
@@ -206,7 +206,7 @@ Primitves are described by one or more vertices. To find the vertices for a prim
 The indices point to vertices in the vertex buffer and allow the IA to get the correct vertices. 
 When all indices are processed, the primitives are passed to the vertex shader stage. 
 
-\noindent This is the output of the input assembler and only passing the data through the other stages.
+\noindent This is the output of the input assembler and only passing the data through the other stages:
 
 \noindent \includegraphics[height= 0.16\textheight]{Assets/PassThrough.png}
 
@@ -255,13 +255,13 @@ vs_output VSEntry(const vs_input input){
 \noindent HLSL has a preprocessor and allows macros. \textbf{DegreeToRad} is such a macro and converts angles from degrees into radians.
 
 \noindent The position data is normalized, in the intervall [-1,1], but the image it is rendered to is not square.
-Without line 22, the cube would be streched along the x-axis. To compensate for that, the x coordinates must be divided by the aspect ratio (Width/Height).
+Without line 22, the cube would be stretched along the x-axis. To compensate for that, the x coordinates must be divided by the aspect ratio (Width/Height).
 
 \noindent Line 23 is interesting, because it is using an intrinsic. Intrinsics are functions that map directly to assembly instructions. 
 The \textbf{mul} intrinsic has to be used for efficient matrix multiplication.
 
 \noindent The main functions of shaders specify, which data is required from the previous stage. 
-The return value of the main function is, what is passed to the next stage. If a single value is required by the following stage, it's sufficient to simply return this value.
+The return value of the main function is, what is passed to the next stage. If a single value is required by the following stage, it is sufficient to simply return this value.
 Everytime more than a single value is required, the function has to return a struct with the data. In the example, the new position and the input color are passed to the next stage.
 
 
@@ -272,12 +272,12 @@ The amount of vertices in a patch is defined by the shape. The tessellation stag
 These three stages divide each patch into smaller patches.
 
 \noindent The \textbf{hull shader} stage is the first of the three stages. 
-It takes a patch as input and outputs control points, which are used by the domain shader, and patch-constant data, which is used by the tessllator.
+It takes a patch as input and outputs control points, which are used by the domain shader, and patch-constant data, which is used by the tessellator.
 
 \noindent The \textbf{tessellator} stage takes the patch-constant data and calculates UV(W) values. Each UV(W) value can be used by the domain shader to create a new vertex.
 
 \noindent The \textbf{domain shader} stage combines the control points from the hull shader and the UV(W)-values from the tessellator.
-By interpolating betweeen control points with the UV(W)-values, new vertices can be created. 
+By interpolating between control points with the UV(W)-values, new vertices can be created. 
 The UV(W)-values are often used to calculate new vertex positions, but it is also possible to calculate a color using these values. 
 \noindent This is the cube, after tessellation:
 
@@ -335,11 +335,11 @@ and the main function, which generates the control-points for the patch.
 \noindent The main function of the domain shader calculates the new vertices, which contain a position and a color.
 
 \noindent Before each main function, properties must be declared within square brackets.
-The hull shader nees to know which shape of the patch, how many control points it should output and which function is used to calculate the patch-constant data.
+The hull shader needs to know the shape of the patch, how many control points it should output and which function is used to calculate the patch-constant data.
 The domain shader also needs to know the patch shape.
 
 \subsection{Geometry Shader Stage}
-The Geometry Shader is the last stage before the rasterizer and can be used to generate new primitives. Unlike the previous stages, which operate on single vertices, geometry shaders
+The geometry shader is the last stage before the rasterizer and can be used to generate new primitives. Unlike the previous stages, which operate on single vertices, geometry shaders
 are invoked for each primitive, coming from the previous stage\cite{HLSLGS}. 
 The data from the input primitives can now be used to generate new vertices, which define the new primitives.
 The amount of generated vertices is not fixed, but a static upper limit must be defined.
@@ -385,14 +385,14 @@ which are then appended to the output stream as a \href{https://learn.microsoft.
 
 \subsection{Rasterizer Stage}
 This stage is the last stage before the pixel shader.
-Because the primitves are described by vectors in the preceeding stages,
+Because the primitves are described by vectors in the preceding stages,
 the rasterizer has to transform the data into a raster image. 
 The rasterizer takes the primitives and calculates which pixels in the image are covered by a primitive.
 There are different
 \href{https://learn.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-rasterizer-stage-rules}
 {rasterization rules}, depending on the primitve type, multisampling and anti-aliasing.
 
-\noindent The rasterizer cannot be programmed with a shader like the other stages, but some settings can be set by the CPU.\@
+\noindent The rasterizer cannot be programmed with a shader, like the other stages, but some settings can be set by the CPU.\@
 It is possible to specify if the primitives are filled or a wireframe, enabling or disabling multisampling and enabling or disabling anti-aliasing.
 More settings can be found in the \href{https://learn.microsoft.com/en-us/windows/win32/api/D3D11/ns-d3d11-d3d11_rasterizer_desc}{Direct3D reference}.
 \begin{figure}[h]
@@ -439,11 +439,11 @@ ps_output PSEntry(const ps_input input){
 \noindent This pixel shader animates all pixels, where the red channel is equal to 1 or 0;
 The color of the animation comes from a constant buffer. The CPU is responsible for updating the color. 
 
-\noindent Notice, that the ColorX variables are from the constant buffer and can be used like global variables.
+\noindent Notice, that the Color[X] variables are from the constant buffer and can be used like global variables.
 
 \subsection{Output Merger Stage}
 The last graphics pipeline stage is the output merger. Its job is to generate the final pixel color\cite{HLSLOMS}, 
-by blending the color output of the pixel shader with the depth data. If no depth data is specified, the final pixel color
+by blending the color output of the pixel shader with the depth data. If no depth data exists, the final pixel color
 is the same color, as the one coming from the pixel shader.
 
 \noindent This is the image after the output merger stage:
@@ -452,15 +452,17 @@ is the same color, as the one coming from the pixel shader.
 
 \subsection{Compute Shader}
 
-Direct3D11 introduced computer shaders. These shaders are general purpose shaders, which are no part of the graphics pipeline.
-Instead it is possible abuse the parallel design of the GPU to perform computations on the GPU, which aren't necessarily graphics related.
+Direct3D11 introduced computer shaders. These shaders are general purpose shaders, which are not part of the graphics pipeline.
+Compute shaders can use the GPU for general-purpose computations, which are not necessarily graphics related.
 
 \noindent Even though compute shaders are independent from the graphics pipeline, both can be used together.
 
-\noindent \includegraphics[height= 0.16\textheight]{Assets/ComputeShader.png}
-
 \noindent Compute shaders can be used for post-processing effects. 
-The example uses a compute shader that scales the red channel down for every pixel in the image, excluding all pixels with an rgb value of 0xffffff.
+The example uses a compute shader, that scales the red channel down for every pixel in the image, excluding all pixels with an rgb value of 0xffffff.
+
+\noindent This is the cube after the computer shader:
+
+\noindent \includegraphics[height= 0.16\textheight]{Assets/ComputeShader.png}
 
 \href{https://gist.github.com/HatecrewJP/90dc57625a3fe2f78e667d3e2613297a}{ComputerShader}
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
@@ -479,7 +481,7 @@ void CSEntry(uint3 GroupID: SV_GroupID){
 
 
 \noindent Compute shaders need to specify how many threads 
-are spawned when the shader is invoked. This is done by providing three values, x, y and z, in the \textbf{numthreads} property\cite{HLSLCreateCS}.
+are spawned, when the shader is invoked. This is done by providing three values, x, y and z, in the \textbf{numthreads} property\cite{HLSLCreateCS}.
 
 \subsection{Final Image}
 After all these steps the image can be rendered to the screen.
