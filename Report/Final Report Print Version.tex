@@ -192,7 +192,7 @@ The diagram on the right illustrates the Direct3D11 pipeline and the order in wh
 The process starts on the CPU.\@ The CPU has to decide what data the GPU has to transform and in which way.
 The first step is to pass the data of the cube to the GPU.\@ This is done by creating a Vertex Buffer and an Index Buffer, 
 which contain the necessary information for the input assembler. 
-The \href{https://gist.github.com/HatecrewJP/04172ef23d3d41105c84c74415379846}{vertex and index data}, passed by the CPU, describes 8 vertices and 12 triangles. 
+The vertex and index data, passed by the CPU, describes 8 vertices and 12 triangles. 
 Each vertex containts a position and a color.
 
 
@@ -201,7 +201,7 @@ To see an image from the data that has been passed to the CPU, a few pipeline st
 In the cube example, the input assembler, vertex shader, rasterizer and pixel shader are active. At that point, the shaders only pass the data to the next stage, without modifying it.
 
 \subsection{Input Assembler Stage}
-The input assembler stage(IA) receives the index and vertex buffers from the CPU.\@ It then uses these buffers, to create \href{https://en.wikipedia.org/wiki/Geometric_primitive}{primitves} (shapes).
+The input assembler stage(IA) receives the index and vertex buffers from the CPU.\@ It then uses these buffers, to create primitves (shapes).
 Primitves are described by one or more vertices. To find the vertices for a primitve, the IA reads consecutive indices from the index buffer. 
 The indices point to vertices in the vertex buffer and allow the IA to get the correct vertices. 
 When all indices are processed, the primitives are passed to the vertex shader stage. 
@@ -221,7 +221,7 @@ but operates only at one at a time.
 \noindent \includegraphics[height= 0.16\textheight]{Assets/VertexShader.png}
 
 
-\href{https://gist.github.com/HatecrewJP/1a5f491b23e5101acf1bc5c783f65ece}{VertexShader}
+VertexShader
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
 #define PI 3.14159265359
 #define DegreeToRad(x) ((x)*PI/180)
@@ -286,8 +286,8 @@ The UV(W)-values are often used to calculate new vertex positions, but it is als
 \noindent \includegraphics[height= 0.16\textheight]{Assets/Tesselator.png}
 
 
-\href{https://gist.github.com/HatecrewJP/8898a51f45c2937ac1964ce53ce62eea}{Hull Shader} and 
-\href{https://gist.github.com/HatecrewJP/97633439372d09aa21b89a5f4318541a}{Domain Shader}
+Hull Shader and 
+Domain Shader
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
 ConstantOutputType PatchConstantFunction(
   InputPatch<HsInput,3> inputPatch, 
@@ -349,7 +349,7 @@ The amount of generated vertices is not fixed, but a static upper limit must be 
 \noindent \includegraphics[height= 0.16\textheight]{Assets/GeometryShader.png}
 
 
-\href{https://gist.github.com/HatecrewJP/ac2ab08758fb5adff49a303aa3664ee2}{Geometry Shader}
+Geometry Shader
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
 [maxvertexcount(9)]
 void GSEntry(
@@ -381,7 +381,7 @@ Instead of returning a value, it takes a stream as input and outputs the new pri
 \noindent The geometry shader divides the cube even further.
 The input primitves are used to calculate the triangles midpoint. This midpoint is then used to generate
 three triangles, each made by the midpoint and two vertices from the input,
-which are then appended to the output stream as a \href{https://learn.microsoft.com/en-us/windows/win32/direct3d9/triangle-strips}{triangle strip}.
+which are then appended to the output stream as a triangle strip.
 
 \noindent The geometry shader output is passed down to the rasterizer stage.
 
@@ -391,12 +391,12 @@ Because the primitves are described by vectors in the preceding stages,
 the rasterizer has to transform the data into a raster image. 
 The rasterizer takes the primitives and calculates which pixels in the image are covered by a primitive.
 There are different
-\href{https://learn.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-rasterizer-stage-rules}
-{rasterization rules}, depending on the primitve type, multisampling and anti-aliasing.
+
+rasterization rules, depending on the primitve type, multisampling and anti-aliasing.
 
 \noindent The rasterizer cannot be programmed with a shader, like the other stages, but some settings can be set by the CPU.\@
 It is possible to specify if the primitives are filled or a wireframe, enabling or disabling multisampling and enabling or disabling anti-aliasing.
-More settings can be found in the \href{https://learn.microsoft.com/en-us/windows/win32/api/D3D11/ns-d3d11-d3d11_rasterizer_desc}{Direct3D reference}.
+More settings can be found in the Direct3D reference.
 \begin{figure}[h]
   \begin{minipage}{.49\textwidth}
     \includegraphics[height= 0.16\textheight]{Assets/GeometryShader.png}
@@ -423,7 +423,7 @@ combines textures, buffer data and per-vertex values\cite{HLSLPS} to calculate c
 
 \noindent \includegraphics[height= 0.16\textheight]{Assets/PixelShader.png}
 
-\href{https://gist.github.com/HatecrewJP/c22c3aa9650dfd28dac0e9172eba6dcd}{Pixel Shader}
+Pixel Shader
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
 ps_output PSEntry(const ps_input input){
   ps_output output;
@@ -466,7 +466,7 @@ The example uses a compute shader, that scales the red channel down for every pi
 
 \noindent \includegraphics[height= 0.16\textheight]{Assets/ComputeShader.png}
 
-\href{https://gist.github.com/HatecrewJP/90dc57625a3fe2f78e667d3e2613297a}{ComputerShader}
+ComputerShader
 \begin{minted}[xleftmargin=0.3cm,bgcolor=bg,linenos]{hlsl}
 RWTexture2D <unorm float4> SwapChainImageCopy : register(u0);
 
