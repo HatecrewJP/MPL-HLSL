@@ -24,22 +24,14 @@ global_variable int const Zero = 0;
 global_variable GraphicsPipelineState NILGraphicsPipelineState = {};
 global_variable ComputeShaderState NILComputeShaderState = {};
 
-global_variable ID3D11RenderTargetView 	*GlobalRenderTargetView = nullptr;
+
 global_variable ID3D11Texture2D			*GlobalFrameBuffer 		= nullptr;
 
 
 
 
 
-
-
-
-
-
-
-
 //Windows functions
-
 LRESULT Wndproc(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam){
 	switch(Message){
 		case WM_CLOSE:{
@@ -522,20 +514,23 @@ internal int Win32AddPixelShaderToArray(
 }
 
 
-internal void ResizeSwapChainBuffers(ID3D11Device *Device,ID3D11DeviceContext *Context, IDXGISwapChain1 *SwapChain, UINT NewWidth, UINT NewHeight){
+internal void ResizeSwapChainBuffers(ID3D11Device *Device,ID3D11DeviceContext *Context, IDXGISwapChain1 *SwapChain, UINT NewWidth, UINT NewHeight, ID3D11RenderTargetView* *RenderTargetView){
 	Context->OMSetRenderTargets(0,0,0);
 	GlobalFrameBuffer->Release();
 	GlobalFrameBuffer = nullptr;
-	GlobalRenderTargetView->Release();
-	GlobalRenderTargetView = nullptr;
+	
+	ASSERT(RenderTargetView);
+	ASSERT(*RenderTargetView)
+	(*RenderTargetView)->Release();
+	(*RenderTargetView) = nullptr;
 	
 	
 	SwapChain->ResizeBuffers(0,NewWidth,NewHeight,DXGI_FORMAT_UNKNOWN,0);
 	if(SwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D),(void**)&GlobalFrameBuffer)==S_OK){
 		ASSERT(GlobalFrameBuffer);
 		//RenderTargetView
-		if(Device->CreateRenderTargetView(GlobalFrameBuffer,NULL,&GlobalRenderTargetView)==S_OK){
-			ASSERT(GlobalRenderTargetView);
+		if(Device->CreateRenderTargetView(GlobalFrameBuffer,NULL,RenderTargetView)==S_OK){
+			ASSERT(RenderTargetView);
 			OutputDebugStringA("Resize Success\n");
 		}
 		else{
@@ -548,7 +543,7 @@ internal void ResizeSwapChainBuffers(ID3D11Device *Device,ID3D11DeviceContext *C
 	
 }
 
-internal void UpdateCSTexture(ID3D11Device *Device, UINT Width, UINT Height, ID3D11Texture2D* *CSShaderResource, ID3D11UnorderedAccessView* *UAVArray){
+internal void UpdateCSTexture(ID3D11Device *Device, UINT Width, UINT Height, ID3D11Texture2D* *CSShaderResource, ID3D11UnorderedAccessView* *UAVArray, ID3D11RenderTargetView* *RenderTargetView){
 	if(*CSShaderResource){
 		(*CSShaderResource)->Release();
 		*CSShaderResource = NULL;
@@ -811,13 +806,13 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			res = Device->CreateRasterizerState(&RasterizerDesc2,&RasterizerState2);
 			ASSERT(RasterizerState2);
 			
-			
+			ID3D11RenderTargetView 	*RenderTargetView = nullptr;
 			//FrameBuffer
 			if(SwapChain->GetBuffer(0,__uuidof(ID3D11Resource),(void**)&GlobalFrameBuffer)==S_OK){
 				ASSERT(GlobalFrameBuffer);
 				//RenderTargetView
-				if(Device->CreateRenderTargetView(GlobalFrameBuffer,NULL,&GlobalRenderTargetView)==S_OK){
-					ASSERT(GlobalRenderTargetView);
+				if(Device->CreateRenderTargetView(GlobalFrameBuffer,NULL,&RenderTargetView)==S_OK){
+					ASSERT(RenderTargetView);
 					OutputDebugStringA("RTV Success\n");
 				}
 				else{
@@ -877,7 +872,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					RasterizerState2,
 					&PixelShaderArray[0],
 					nullptr,0,
-					&GlobalRenderTargetView, 1,
+					&RenderTargetView, 1,
 					"0:PassThrough"));
 			
 			AddPipelineStateToArray(
@@ -898,7 +893,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					RasterizerState2,
 					&PixelShaderArray[0],
 					nullptr,0,
-					&GlobalRenderTargetView, 1,
+					&RenderTargetView, 1,
 					"1:VSActive"));
 					
 				
@@ -921,7 +916,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					RasterizerState2,
 					&PixelShaderArray[0],
 					nullptr,0,
-					&GlobalRenderTargetView, 1,
+					&RenderTargetView, 1,
 					"2:Tesselation"));
 			
 			AddPipelineStateToArray(
@@ -942,7 +937,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					RasterizerState2,
 					&PixelShaderArray[0],
 					nullptr,0,
-					&GlobalRenderTargetView, 1,
+					&RenderTargetView, 1,
 					"3:GeometryShader"));
 			
 			AddPipelineStateToArray(
@@ -963,7 +958,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					RasterizerState1,
 					&PixelShaderArray[0],
 					nullptr,0,
-					&GlobalRenderTargetView, 1,
+					&RenderTargetView, 1,
 					"4:RasterizerSet"));
 					
 			AddPipelineStateToArray(
@@ -984,7 +979,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					RasterizerState1,
 					&PixelShaderArray[1],
 					&ConstantBuffer,1,
-					&GlobalRenderTargetView, 1,
+					&RenderTargetView, 1,
 					"5:PixelShader"));
 			
 			//ComputeShader
@@ -1000,7 +995,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			ASSERT(CSCode.Code);
 			res = Device->CreateComputeShader(CSCode.Code,CSCode.Size,nullptr,&ComputeShaderArray[0]);
 			ASSERT(res==S_OK);
-			UpdateCSTexture(Device,Width, Height, &CSShaderResource, UAVArray);
+			UpdateCSTexture(Device,Width, Height, &CSShaderResource, UAVArray, &RenderTargetView);
 			
 		
 			ComputeShaderStateArray[0].UnorderedAccessViewArray = UAVArray;
@@ -1048,8 +1043,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				if(Width != NewWidth || Height!= NewHeight){
 					Width = NewWidth;
 					Height = NewHeight;
-					ResizeSwapChainBuffers(Device,Context,SwapChain,Width,Height);
-					UpdateCSTexture(Device,Width,Height,&CSShaderResource,UAVArray);
+					ResizeSwapChainBuffers(Device,Context,SwapChain,Width,Height,&RenderTargetView);
+					UpdateCSTexture(Device,Width,Height,&CSShaderResource,UAVArray,&RenderTargetView);
 				}
 				
 				D3D11_VIEWPORT ViewPort;
@@ -1061,7 +1056,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				ViewPort.MaxDepth = 1.0f;
 
 				float const BackgroundClearColorRGBA[4] = {1,1,1,1};
-				Context->ClearRenderTargetView(GlobalRenderTargetView, BackgroundClearColorRGBA);
+				Context->ClearRenderTargetView(RenderTargetView, BackgroundClearColorRGBA);
 				
 				ConstantBufferData[1]=(float)Width;
 				ConstantBufferData[2]=(float)Height;

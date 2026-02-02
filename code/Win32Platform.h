@@ -103,8 +103,8 @@ internal int Win32AddPixelShaderToArray(
 	unsigned int *PixelShaderArrayCount,
 	ID3D11PixelShader* PixelShader);
 
-internal void ResizeSwapChainBuffers(ID3D11Device *Device,ID3D11DeviceContext *Context, IDXGISwapChain1 *SwapChain, UINT NewWidth, UINT NewHeight);
+internal void ResizeSwapChainBuffers(ID3D11Device *Device,ID3D11DeviceContext *Context, IDXGISwapChain1 *SwapChain, UINT NewWidth, UINT NewHeight, ID3D11RenderTargetView* *RenderTargetView);
 
-internal void UpdateCSTexture(ID3D11Device *Device, UINT Width, UINT Height, ID3D11Texture2D* *CSShaderResource, ID3D11UnorderedAccessView* *UAVArray);
+internal void UpdateCSTexture(ID3D11Device *Device, UINT Width, UINT Height, ID3D11Texture2D* *CSShaderResource, ID3D11UnorderedAccessView* *UAVArray, ID3D11RenderTargetView* *RenderTargetView);
 
 internal void CycleShaderColors(ShaderColor *CurrentShaderColor);
