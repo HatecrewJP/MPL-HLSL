@@ -98,7 +98,7 @@ internal int Win32AddPixelShaderToArray(
 	ID3D11PixelShader** PixelShaderArray, 
 	ID3D11PixelShader* PixelShader);
 
-internal void ResizeSwapChainBuffers(UINT NewWidth, UINT NewHeight);
+internal void ResizeSwapChainBuffers(UINT NewWidth, UINT NewHeight, ID3D11RenderTargetView* *RTV);
 
 internal void UpdateCSTexture(UINT Width, UINT Height,ID3D11Texture2D* *CSShaderResource, ID3D11UnorderedAccessView* *UAVArray);
 

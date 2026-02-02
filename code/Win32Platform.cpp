@@ -32,7 +32,7 @@ global_variable ID3D11Device 			*GlobalDevice 			= nullptr;
 global_variable IDXGISwapChain1 		*GlobalSwapChain 		= nullptr;
 global_variable ID3D11DeviceContext 	*GlobalDeviceContext 	= nullptr;
 
-global_variable ID3D11RenderTargetView 	*GlobalRenderTargetView = nullptr;
+
 
 
 
@@ -534,18 +534,22 @@ internal int Win32AddPixelShaderToArray(
 }
 
 
-internal void ResizeSwapChainBuffers(UINT NewWidth, UINT NewHeight){
+internal void ResizeSwapChainBuffers(UINT NewWidth, UINT NewHeight, ID3D11RenderTargetView* *RTV){
 	GlobalDeviceContext->OMSetRenderTargets(0,0,0);
-	GlobalRenderTargetView->Release();
-	GlobalRenderTargetView = nullptr;
+	ASSERT(RTV);
+	ASSERT(*RTV);
+	
+	(*RTV)->Release();
+	*RTV = nullptr;
+
+	GlobalSwapChain->ResizeBuffers(0,NewWidth,NewHeight,DXGI_FORMAT_UNKNOWN,0);
 	
 	ID3D11Texture2D* FrameBuffer = nullptr;
-	GlobalSwapChain->ResizeBuffers(0,NewWidth,NewHeight,DXGI_FORMAT_UNKNOWN,0);
-	if(GlobalSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D),(void**)&FrameBuffer)==S_OK){
+	if(GlobalSwapChain->GetBuffer(INDEX_SWAPCHAIN_BUFFER_FOR_RTV,__uuidof(ID3D11Texture2D),(void**)&FrameBuffer)==S_OK){
 		ASSERT(FrameBuffer);
 		//RenderTargetView
-		if(GlobalDevice->CreateRenderTargetView(FrameBuffer,NULL,&GlobalRenderTargetView)==S_OK){
-			ASSERT(GlobalRenderTargetView);
+		if(GlobalDevice->CreateRenderTargetView(FrameBuffer,NULL,RTV)==S_OK){
+			ASSERT(*RTV);
 			OutputDebugStringA("Resize Success\n");
 		}
 		else{
@@ -801,11 +805,12 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			//FrameBuffer
 			ID3D11Resource *FrameBuffer = nullptr;
+			ID3D11RenderTargetView 	*RenderTargetView = nullptr;
 			if(GlobalSwapChain->GetBuffer(INDEX_SWAPCHAIN_BUFFER_FOR_RTV,__uuidof(ID3D11Resource),(void**)&FrameBuffer)==S_OK){
 				ASSERT(FrameBuffer);
 				//RenderTargetView
-				if(GlobalDevice->CreateRenderTargetView(FrameBuffer,NULL,&GlobalRenderTargetView)==S_OK){
-					ASSERT(GlobalRenderTargetView);
+				if(GlobalDevice->CreateRenderTargetView(FrameBuffer,NULL,&RenderTargetView)==S_OK){
+					ASSERT(RenderTargetView);
 					OutputDebugStringA("RTV Success\n");
 				}
 				else{
@@ -865,7 +870,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					RasterizerState2,
 					&GlobalPixelShaderArray[0],
 					nullptr,0,
-					&GlobalRenderTargetView, 1,
+					&RenderTargetView, 1,
 					"0:PassThrough"));
 			
 			AddPipelineStateToArray(
@@ -886,7 +891,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					RasterizerState2,
 					&GlobalPixelShaderArray[0],
 					nullptr,0,
-					&GlobalRenderTargetView, 1,
+					&RenderTargetView, 1,
 					"1:VSActive"));
 					
 				
@@ -909,7 +914,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					RasterizerState2,
 					&GlobalPixelShaderArray[0],
 					nullptr,0,
-					&GlobalRenderTargetView, 1,
+					&RenderTargetView, 1,
 					"2:Tesselation"));
 			
 			AddPipelineStateToArray(
@@ -930,7 +935,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					RasterizerState2,
 					&GlobalPixelShaderArray[0],
 					nullptr,0,
-					&GlobalRenderTargetView, 1,
+					&RenderTargetView, 1,
 					"3:GeometryShader"));
 			
 			AddPipelineStateToArray(
@@ -951,7 +956,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					RasterizerState1,
 					&GlobalPixelShaderArray[0],
 					nullptr,0,
-					&GlobalRenderTargetView, 1,
+					&RenderTargetView, 1,
 					"4:RasterizerSet"));
 					
 			AddPipelineStateToArray(
@@ -972,7 +977,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					RasterizerState1,
 					&GlobalPixelShaderArray[1],
 					&ConstantBuffer,1,
-					&GlobalRenderTargetView, 1,
+					&RenderTargetView, 1,
 					"5:PixelShader"));
 			
 			//ComputeShader
@@ -1037,7 +1042,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				if(Width != NewWidth || Height!= NewHeight){
 					Width = NewWidth;
 					Height = NewHeight;
-					ResizeSwapChainBuffers(Width,Height);
+					ResizeSwapChainBuffers(Width,Height,&RenderTargetView);
 					UpdateCSTexture(Width,Height,&CSShaderResource,UAVArray);
 				}
 				
@@ -1050,7 +1055,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				ViewPort.MaxDepth = 1.0f;
 
 				float const BackgroundClearColorRGBA[4] = {1,1,1,1};
-				GlobalDeviceContext->ClearRenderTargetView(GlobalRenderTargetView, BackgroundClearColorRGBA);
+				GlobalDeviceContext->ClearRenderTargetView(RenderTargetView, BackgroundClearColorRGBA);
 				
 				ConstantBufferData[1]=(float)Width;
 				ConstantBufferData[2]=(float)Height;
