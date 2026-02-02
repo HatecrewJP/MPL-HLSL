@@ -20,6 +20,8 @@
 #include "Structs.h"
 #include "Win32Platform.h"
 
+#define INDEX_SWAPCHAIN_BUFFER_FOR_RTV 0
+
 global_variable int const Zero = 0;
 global_variable GraphicsPipelineState NILGraphicsPipelineState = {};
 global_variable ComputeShaderState NILComputeShaderState = {};
@@ -31,7 +33,7 @@ global_variable IDXGISwapChain1 		*GlobalSwapChain 		= nullptr;
 global_variable ID3D11DeviceContext 	*GlobalDeviceContext 	= nullptr;
 
 global_variable ID3D11RenderTargetView 	*GlobalRenderTargetView = nullptr;
-global_variable ID3D11Texture2D			*GlobalFrameBuffer 		= nullptr;
+
 
 
 global_variable UINT GlobalVertexBufferCount = 0;
@@ -534,17 +536,15 @@ internal int Win32AddPixelShaderToArray(
 
 internal void ResizeSwapChainBuffers(UINT NewWidth, UINT NewHeight){
 	GlobalDeviceContext->OMSetRenderTargets(0,0,0);
-	GlobalFrameBuffer->Release();
-	GlobalFrameBuffer = nullptr;
 	GlobalRenderTargetView->Release();
 	GlobalRenderTargetView = nullptr;
 	
-	
+	ID3D11Texture2D* FrameBuffer = nullptr;
 	GlobalSwapChain->ResizeBuffers(0,NewWidth,NewHeight,DXGI_FORMAT_UNKNOWN,0);
-	if(GlobalSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D),(void**)&GlobalFrameBuffer)==S_OK){
-		ASSERT(GlobalFrameBuffer);
+	if(GlobalSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D),(void**)&FrameBuffer)==S_OK){
+		ASSERT(FrameBuffer);
 		//RenderTargetView
-		if(GlobalDevice->CreateRenderTargetView(GlobalFrameBuffer,NULL,&GlobalRenderTargetView)==S_OK){
+		if(GlobalDevice->CreateRenderTargetView(FrameBuffer,NULL,&GlobalRenderTargetView)==S_OK){
 			ASSERT(GlobalRenderTargetView);
 			OutputDebugStringA("Resize Success\n");
 		}
@@ -582,13 +582,19 @@ internal void UpdateCSTexture(UINT Width, UINT Height, ID3D11Texture2D* *CSShade
 	CSSubresourceData.pSysMem = CSShaderResourceData;
 	CSSubresourceData.SysMemPitch = 4;
 	CSSubresourceData.SysMemSlicePitch = 0;
+
+	ID3D11Texture2D *FrameBuffer = nullptr;
+	ASSERT(GlobalSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D),(void**)&FrameBuffer)==S_OK);
+	
 	D3D11_TEXTURE2D_DESC Tex2DDesc;
-	GlobalFrameBuffer->GetDesc(&Tex2DDesc);
+	FrameBuffer->GetDesc(&Tex2DDesc);
 	Tex2DDesc.BindFlags |= (D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS);
 	
 	ASSERT((*CSShaderResource) == NULL);
 	ASSERT(GlobalDevice->CreateTexture2D(&Tex2DDesc,&CSSubresourceData,CSShaderResource)==S_OK);
 	ASSERT((*CSShaderResource) != NULL);
+	
+	
 	//Create new UAV
 	D3D11_BUFFER_UAV UAVElementDesc;
 	UAVElementDesc.FirstElement = 0;
@@ -794,10 +800,11 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			
 			//FrameBuffer
-			if(GlobalSwapChain->GetBuffer(0,__uuidof(ID3D11Resource),(void**)&GlobalFrameBuffer)==S_OK){
-				ASSERT(GlobalFrameBuffer);
+			ID3D11Resource *FrameBuffer = nullptr;
+			if(GlobalSwapChain->GetBuffer(INDEX_SWAPCHAIN_BUFFER_FOR_RTV,__uuidof(ID3D11Resource),(void**)&FrameBuffer)==S_OK){
+				ASSERT(FrameBuffer);
 				//RenderTargetView
-				if(GlobalDevice->CreateRenderTargetView(GlobalFrameBuffer,NULL,&GlobalRenderTargetView)==S_OK){
+				if(GlobalDevice->CreateRenderTargetView(FrameBuffer,NULL,&GlobalRenderTargetView)==S_OK){
 					ASSERT(GlobalRenderTargetView);
 					OutputDebugStringA("RTV Success\n");
 				}
@@ -1000,6 +1007,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			bool VsyncActive = 1;
 			bool AnimationIsActive = false;
 			ShaderColor ActiveShaderColor = YELLOW;
+			unsigned int CurrentDrawBufferIndex = 1;
 			
 			//Loop
 			MessageLoopStateInput State;
@@ -1060,13 +1068,19 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 					GlobalDeviceContext->DrawIndexed(DrawIndexCount,0,0);
 				}
 				if(ActiveCSState->ComputeShader){
-					GlobalDeviceContext->CopyResource(CSShaderResource, GlobalFrameBuffer);
+					ID3D11Buffer *CurrentFrameBuffer = nullptr;
+					ASSERT(GlobalSwapChain->GetBuffer(INDEX_SWAPCHAIN_BUFFER_FOR_RTV,__uuidof(ID3D11Resource),(void**)&CurrentFrameBuffer)==S_OK);
+					ASSERT(CurrentFrameBuffer);
+					
+					GlobalDeviceContext->CopyResource(CSShaderResource, CurrentFrameBuffer);
 					SetComputeShaderState(GlobalDeviceContext,ActiveCSState);
 					GlobalDeviceContext->Dispatch(Width,Height,1);
-					GlobalDeviceContext->CopyResource(GlobalFrameBuffer,CSShaderResource);
+					GlobalDeviceContext->CopyResource(CurrentFrameBuffer,CSShaderResource);
 				}
 				
-				GlobalSwapChain->Present(VsyncActive, 0);
+				if(GlobalSwapChain->Present(VsyncActive, 0)==S_OK){
+					CurrentDrawBufferIndex ^=1;
+				}
 				
 				if (AnimationIsActive) {
 					AnimationCount = (AnimationCount + 1) % (60);
