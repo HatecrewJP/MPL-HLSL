@@ -33,6 +33,10 @@ internal ID3D11InputLayout* Win32CreateVertexInputLayout(
 	size_t ShaderSize
 );
 internal void CreateVBForIndexedGeometry(
+	ID3D11Device* Device,
+	ID3D11Buffer* *VertexBufferArray,
+	unsigned int *VertexBufferCount,
+	ID3D11Buffer* *IndexBufferArray,
 	IndexedGeometryObject *IndexedGeometryArray,
 	unsigned int *IndexedGeometryCount,
 	float *GeometryData,
@@ -95,11 +99,12 @@ internal void PushPipelineState(GraphicsPipelineState*ActivePipelineStateArray,u
 
 //miscs
 internal int Win32AddPixelShaderToArray(
-	ID3D11PixelShader** PixelShaderArray, 
+	ID3D11PixelShader* *PixelShaderArray,
+	unsigned int *PixelShaderArrayCount,
 	ID3D11PixelShader* PixelShader);
 
-internal void ResizeSwapChainBuffers(UINT NewWidth, UINT NewHeight, ID3D11RenderTargetView* *RTV);
+internal void ResizeSwapChainBuffers(ID3D11Device *Device,ID3D11DeviceContext *Context, IDXGISwapChain1 *SwapChain, UINT NewWidth, UINT NewHeight);
 
-internal void UpdateCSTexture(UINT Width, UINT Height,ID3D11Texture2D* *CSShaderResource, ID3D11UnorderedAccessView* *UAVArray);
+internal void UpdateCSTexture(ID3D11Device *Device, UINT Width, UINT Height, ID3D11Texture2D* *CSShaderResource, ID3D11UnorderedAccessView* *UAVArray);
 
 internal void CycleShaderColors(ShaderColor *CurrentShaderColor);
