@@ -3,7 +3,7 @@
 //Windows functions
 LRESULT Wndproc(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam);
 internal void Win32ProcessError(DWORD Error);
-internal void MessageLoop(ID3D11Device* Device, float *ConstantBuffer);
+internal void MessageLoop(ID3D11Device* Device, float *ConstantBuffer, MessageLoopStateInput *StateInput);
 
 //DXGI Functions
 internal int Win32GetIDXGIInterfacesFromD3DDevice(
@@ -33,6 +33,8 @@ internal ID3D11InputLayout* Win32CreateVertexInputLayout(
 	size_t ShaderSize
 );
 internal void CreateVBForIndexedGeometry(
+	IndexedGeometryObject *IndexedGeometryArray,
+	unsigned int *IndexedGeometryCount,
 	float *GeometryData,
 	unsigned int VertexDataSize,
 	unsigned int VertexElementWidth,
@@ -87,8 +89,8 @@ internal GraphicsPipelineState BuildPipelineState(
 
 internal void AddPipelineStateToArray(GraphicsPipelineState PipelineState);
 internal void SetComputeShaderState(ID3D11DeviceContext *DeviceContext, ComputeShaderState &CSState);
-internal void ClearActivePipelineState();
-internal void PushPipelineState(GraphicsPipelineState *State);
+internal void ClearActivePipelineState(GraphicsPipelineState*ActivePipelineStateArray,unsigned int *ActivePipelineStateCount);
+internal void PushPipelineState(GraphicsPipelineState*ActivePipelineStateArray,unsigned int *ActivePipelineStateCount, GraphicsPipelineState *State);
 
 
 //miscs
@@ -98,6 +100,6 @@ internal int Win32AddPixelShaderToArray(
 
 internal void ResizeSwapChainBuffers(UINT NewWidth, UINT NewHeight);
 
-internal void UpdateCSTexture(UINT Width, UINT Height);
+internal void UpdateCSTexture(UINT Width, UINT Height,ID3D11Texture2D* *CSShaderResource, ID3D11UnorderedAccessView* *UAVArray);
 
 internal void CycleShaderColors(ShaderColor *CurrentShaderColor);

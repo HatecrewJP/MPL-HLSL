@@ -84,4 +84,16 @@ enum ShaderColor{
 	SHADER_COLOR_COUNT
 };
 
+struct MessageLoopStateInput{
+	bool *Running;
+	bool *VsyncActive;
+	bool *AnimationIsActive;
+	ShaderColor *ActiveShaderColor;
+	GraphicsPipelineState *PipelineStateArray;
+	unsigned int *PipelineStateCount;
+	GraphicsPipelineState *ActivePipelineStateArray;
+	unsigned int *ActivePipelineStateCount;
+	ComputeShaderState* *ActiveCSState;
+	ComputeShaderState *ComputeShaderStateArray;
+};
 
