@@ -18,7 +18,7 @@ internal IDXGISwapChain1* Win32GetSwapChain(ID3D11Device *Device, HWND Window,ID
 
 
 //Shader compilation functions
-internal ShaderCode Win32CompileShaderFromFile(LPCWSTR Filename, LPCSTR Entrypoint, LPCSTR Target);
+internal ID3DBlob* Win32CompileShaderFromFile(LPCWSTR Filename, LPCSTR Entrypoint, LPCSTR Target);
 
 //Buffer functions
 internal ID3D11Buffer* Win32CreateVertexBuffer(
@@ -28,7 +28,6 @@ internal ID3D11Buffer* Win32CreateVertexBuffer(
 
 internal ID3D11InputLayout* Win32CreateVertexInputLayout(
 	ID3D11Device *Device, 
-	ID3D11DeviceContext *DeviceContext,
 	void *CompiledVSShaderCode, 
 	size_t ShaderSize
 );
@@ -91,7 +90,11 @@ internal GraphicsPipelineState BuildPipelineState(
 	char *Description
 	);
 
-internal void AddPipelineStateToArray(GraphicsPipelineState PipelineState);
+internal void AddPipelineStateToArray(
+	GraphicsPipelineState *PipelineStateArray,
+	unsigned int *PipelineStateCount, 
+	GraphicsPipelineState PipelineState);
+	
 internal void SetComputeShaderState(ID3D11DeviceContext *DeviceContext, ComputeShaderState &CSState);
 internal void ClearActivePipelineState(GraphicsPipelineState*ActivePipelineStateArray,unsigned int *ActivePipelineStateCount);
 internal void PushPipelineState(GraphicsPipelineState*ActivePipelineStateArray,unsigned int *ActivePipelineStateCount, GraphicsPipelineState *State);
