@@ -8,6 +8,8 @@ This project requires microsoft build tools, which are shipped with Visual Studi
 The build script needs to be run from a visual studio developer command prompt, which sets the necessary environment variables.
 
 Running the C version:
+
+
 Build:
 This project can be built by running the c.bat script found in the misc directory. The build output can be found in "/MPL-HLSL/C/build/".
 
@@ -17,6 +19,7 @@ From the working directory, execute the build output.
 
 
 Running the Cpp version:
+
 Build:
 This project can be built by running the cpp.bat script found in the misc directory. The build output can be found in "/MPL-HLSL/CPP/build/".
 
