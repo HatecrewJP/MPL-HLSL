@@ -178,11 +178,11 @@ internal int Win32GetIDXGIInterfacesFromD3DDevice(
 	IDXGIFactory2 **IdxgiFactory)
 {
 	if(Device && IdxgiDevice){
-		Device->QueryInterface(__uuidof(IDXGIDevice1),(void **)IdxgiDevice);
+		Device->lpVtbl->QueryInterface(Device,&IID_IDXGIDevice1,(void **)IdxgiDevice);
 		if(*IdxgiDevice && IdxgiAdapter){
-			(*IdxgiDevice)->GetAdapter(IdxgiAdapter);
+			(*IdxgiDevice)->lpVtbl->GetAdapter(*IdxgiDevice,IdxgiAdapter);
 			if(*IdxgiAdapter && IdxgiFactory){
-				(*IdxgiAdapter)->GetParent(__uuidof(IDXGIFactory2),(void **)IdxgiFactory);
+				(*IdxgiAdapter)->lpVtbl->GetParent(*IdxgiAdapter,&IID_IDXGIFactory2,(void **)IdxgiFactory);
 				if(*IdxgiFactory){
 					return 1;
 				}
@@ -216,10 +216,11 @@ internal IDXGISwapChain1* Win32GetSwapChain(
 	SwapChainDesc1.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	SwapChainDesc1.Flags = 0;
 	
-	IDXGISwapChain1 *SwapChain;
-	if(IdxgiFactory->CreateSwapChainForHwnd(Device,Window,&SwapChainDesc1,NULL,NULL,&SwapChain)!=S_OK){
+	IDXGISwapChain1 *SwapChain = NULL;
+	if(IdxgiFactory->lpVtbl->CreateSwapChainForHwnd(IdxgiFactory,(IUnknown*)Device,Window,&SwapChainDesc1,NULL,NULL,&SwapChain)!=S_OK){
 		return NULL;
 	}
+	ASSERT(SwapChain);
 	return SwapChain;
 	
 }
@@ -235,9 +236,9 @@ internal ID3DBlob* Win32CompileShaderFromFile(LPCWSTR Filename, LPCSTR Entrypoin
 
 	if((D3DCompileFromFile(Filename, NULL, NULL, Entrypoint, Target, D3DCOMPILE_DEBUG, 0, &BlobCode, &BlobError)) != S_OK){
 		if(BlobError){
-			LPCSTR Buffer = (LPCSTR)BlobError->GetBufferPointer();
+			LPCSTR Buffer = (LPCSTR)BlobError->lpVtbl->GetBufferPointer(BlobError);
 			OutputDebugStringA(Buffer);
-			BlobError->Release();
+			BlobError->lpVtbl->Release(BlobError);
 		}
 		return NULL;
 	}
@@ -255,9 +256,9 @@ internal ID3DBlob* Win32CompileShader(LPCSTR ShaderText, SIZE_T ShaderSize, LPCS
 	ID3DBlob *BlobError = NULL;
 	if((D3DCompile(ShaderText,ShaderSize, NULL, NULL, NULL, Entrypoint, Target, D3DCOMPILE_DEBUG, 0, &BlobCode, &BlobError)) != S_OK){
 		if(BlobError){
-			LPCSTR Buffer = (LPCSTR)BlobError->GetBufferPointer();
+			LPCSTR Buffer = (LPCSTR)BlobError->lpVtbl->GetBufferPointer(BlobError);
 			OutputDebugStringA(Buffer);
-			BlobError->Release();
+			BlobError->lpVtbl->Release(BlobError);
 		}
 		return NULL;
 	}
@@ -289,7 +290,7 @@ internal ID3D11Buffer* Win32CreateVertexBuffer(
 	SubresourceData.SysMemSlicePitch = 0;
 	
 	ID3D11Buffer *VertexBuffer = NULL;
-	ASSERT(Device->CreateBuffer(&VertexBufferDesc,&SubresourceData,&VertexBuffer)==S_OK);
+	ASSERT(Device->lpVtbl->CreateBuffer(Device,&VertexBufferDesc,&SubresourceData,&VertexBuffer)==S_OK);
 	ASSERT(VertexBuffer);
 	
 	return VertexBuffer;
@@ -321,7 +322,7 @@ internal ID3D11InputLayout* Win32CreateVertexInputLayout(
 	VSInputElementDescArray[1].InstanceDataStepRate = 0;
 	
 	ID3D11InputLayout *VSInputLayout = NULL;
-	ASSERT(Device->CreateInputLayout(VSInputElementDescArray,2,CompiledVSShaderCode,ShaderSize,&VSInputLayout)==S_OK);
+	ASSERT(Device->lpVtbl->CreateInputLayout(Device,VSInputElementDescArray,2,CompiledVSShaderCode,ShaderSize,&VSInputLayout)==S_OK);
 	ASSERT(VSInputLayout);
 	
 	return VSInputLayout;	
@@ -368,7 +369,7 @@ internal void CreateVBForIndexedGeometry(
 	VertexBufferArray[(*VertexBufferCount)] = Win32CreateVertexBuffer(Device, NewObject.VertexData, NewObject.VertexDataSize);
 	
 	D3D11_BUFFER_DESC VBDesc;
-	VertexBufferArray[(*VertexBufferCount)]->GetDesc(&VBDesc);
+	VertexBufferArray[(*VertexBufferCount)]->lpVtbl->GetDesc(VertexBufferArray[(*VertexBufferCount)],&VBDesc);
 	
 	D3D11_BUFFER_DESC IndexBufferDesc;
 	IndexBufferDesc.ByteWidth = NewObject.IndexDataSize;
@@ -384,7 +385,8 @@ internal void CreateVBForIndexedGeometry(
 	IndexSubresourceData.SysMemSlicePitch = 0;
 	
 
-	HRESULT res = Device->CreateBuffer(
+	HRESULT res = Device->lpVtbl->CreateBuffer(
+		Device,
 		&IndexBufferDesc,
 		&IndexSubresourceData,
 		&IndexBufferArray[(*VertexBufferCount)]);
@@ -403,7 +405,7 @@ internal ID3D11VertexShader* Win32CreateVertexShader(
 	ASSERT(CompiledShaderCode);
 	
 	ID3D11VertexShader *VertexShader = NULL;
-	ASSERT(Device->CreateVertexShader(CompiledShaderCode,ShaderSize,NULL,&VertexShader)==S_OK);
+	ASSERT(Device->lpVtbl->CreateVertexShader(Device,CompiledShaderCode,ShaderSize,NULL,&VertexShader)==S_OK);
 	ASSERT(VertexShader);
 	return VertexShader;
 	
@@ -423,11 +425,11 @@ internal ID3D11PixelShader* Win32CreatePixelShader(
 	ID3DBlob* PSBlob = Win32CompileShaderFromFile(Filename,Entrypoint,Target);
 	if(!PSBlob) return NULL;
 	
-	void *PSBinaryCode = PSBlob->GetBufferPointer();
-	size_t PSBinarySize = PSBlob->GetBufferSize();
+	void *PSBinaryCode  = PSBlob->lpVtbl->GetBufferPointer(PSBlob);
+	size_t PSBinarySize = PSBlob->lpVtbl->GetBufferSize(PSBlob);
 	
 	ID3D11PixelShader *PixelShader = NULL;
-	ASSERT(Device->CreatePixelShader(PSBinaryCode,PSBinarySize,NULL,&PixelShader)==S_OK);
+	ASSERT(Device->lpVtbl->CreatePixelShader(Device,PSBinaryCode,PSBinarySize,NULL,&PixelShader)==S_OK);
 	ASSERT(PixelShader);
 	return PixelShader;
 	
@@ -450,30 +452,30 @@ internal UINT SetPipelineState(
 	}
 	
 	//IA
-	DeviceContext->IASetVertexBuffers(0, 
+	DeviceContext->lpVtbl->IASetVertexBuffers(DeviceContext,0, 
 		PipelineState->VertexBufferCount, PipelineState->VertexBufferArray,
 		PipelineState->StrideArray, PipelineState->OffsetArray);
-	DeviceContext->IASetIndexBuffer(PipelineState->IndexBuffer, PipelineState->IndexBufferFormat, 0);
-	DeviceContext->IASetInputLayout(PipelineState->InputLayout);
-	DeviceContext->IASetPrimitiveTopology(PipelineState->PrimitiveTopology);
+	DeviceContext->lpVtbl->IASetIndexBuffer(DeviceContext,PipelineState->IndexBuffer, PipelineState->IndexBufferFormat, 0);
+	DeviceContext->lpVtbl->IASetInputLayout(DeviceContext,PipelineState->InputLayout);
+	DeviceContext->lpVtbl->IASetPrimitiveTopology(DeviceContext,PipelineState->PrimitiveTopology);
 	//VS
-	DeviceContext->VSSetShader(PipelineState->VertexShader, NULL, 0);
-	DeviceContext->VSSetConstantBuffers(0,PipelineState->VertexShaderConstantBufferCount,PipelineState->VertexShaderConstantBufferArray);
+	DeviceContext->lpVtbl->VSSetShader(DeviceContext,PipelineState->VertexShader, NULL, 0);
+	DeviceContext->lpVtbl->VSSetConstantBuffers(DeviceContext,0,PipelineState->VertexShaderConstantBufferCount,PipelineState->VertexShaderConstantBufferArray);
 	//HS
-	DeviceContext->HSSetShader(PipelineState->HullShader,NULL,0);
+	DeviceContext->lpVtbl->HSSetShader(DeviceContext,PipelineState->HullShader,NULL,0);
 	//DS
-	DeviceContext->DSSetShader(PipelineState->DomainShader,NULL,0);
+	DeviceContext->lpVtbl->DSSetShader(DeviceContext,PipelineState->DomainShader,NULL,0);
 	//GS1
-	DeviceContext->GSSetShader(PipelineState->GeometryShader,NULL,0);
+	DeviceContext->lpVtbl->GSSetShader(DeviceContext,PipelineState->GeometryShader,NULL,0);
 	//RS
-	DeviceContext->RSSetScissorRects(ScissorRectCount,ScissorRectArray);
-	DeviceContext->RSSetState(PipelineState->RasterizerState);
-	DeviceContext->RSSetViewports(ViewportCount,ViewportArray);
+	DeviceContext->lpVtbl->RSSetScissorRects(DeviceContext,ScissorRectCount,ScissorRectArray);
+	DeviceContext->lpVtbl->RSSetState(DeviceContext,PipelineState->RasterizerState);
+	DeviceContext->lpVtbl->RSSetViewports(DeviceContext,ViewportCount,ViewportArray);
 	//PS
-	DeviceContext->PSSetShader(*(PipelineState->PixelShader), NULL, 0);
-	DeviceContext->PSSetConstantBuffers(0,PipelineState->PixelShaderConstantBufferCount,PipelineState->PixelShaderConstantBufferArray);
+	DeviceContext->lpVtbl->PSSetShader(DeviceContext,*(PipelineState->PixelShader), NULL, 0);
+	DeviceContext->lpVtbl->PSSetConstantBuffers(DeviceContext,0,PipelineState->PixelShaderConstantBufferCount,PipelineState->PixelShaderConstantBufferArray);
 	//OMS
-	DeviceContext->OMSetRenderTargets(PipelineState->RenderTargetViewCount, PipelineState->RenderTargetViewArray, NULL);
+	DeviceContext->lpVtbl->OMSetRenderTargets(DeviceContext,PipelineState->RenderTargetViewCount, PipelineState->RenderTargetViewArray, NULL);
 	return PipelineState->IndexCount;
 }
 
@@ -543,9 +545,9 @@ internal void SetComputeShaderState(ID3D11DeviceContext *DeviceContext, ComputeS
 	ASSERT(DeviceContext);
 	ASSERT(CSState);
 	
-	DeviceContext->CSSetUnorderedAccessViews(0,CSState->UnorderedAccessViewCount,CSState->UnorderedAccessViewArray,NULL);
-	DeviceContext->CSSetShaderResources(0,CSState->ShaderResourceViewCount,CSState->ShaderResourceViewArray);
-	DeviceContext->CSSetShader(CSState->ComputeShader,NULL,0);
+	DeviceContext->lpVtbl->CSSetUnorderedAccessViews(DeviceContext,0,CSState->UnorderedAccessViewCount,CSState->UnorderedAccessViewArray,NULL);
+	DeviceContext->lpVtbl->CSSetShaderResources(DeviceContext,0,CSState->ShaderResourceViewCount,CSState->ShaderResourceViewArray);
+	DeviceContext->lpVtbl->CSSetShader(DeviceContext,CSState->ComputeShader,NULL,0);
 }
 internal void ClearActivePipelineState(GraphicsPipelineState *ActivePipelineStateArray, unsigned int *ActivePipelineStateCount){
 	ASSERT(ActivePipelineStateArray);
@@ -601,24 +603,24 @@ internal void ResizeSwapChainBuffers(
 	ASSERT(SwapChain);
 	ASSERT(RenderTargetView);
 	
-	Context->OMSetRenderTargets(0,0,0);
-	GlobalFrameBuffer->Release();
+	Context->lpVtbl->OMSetRenderTargets(Context,0,0,0);
+	GlobalFrameBuffer->lpVtbl->Release(GlobalFrameBuffer);
 	GlobalFrameBuffer = NULL;
 	
 	
 	ASSERT(*RenderTargetView)
-	(*RenderTargetView)->Release();
+	(*RenderTargetView)->lpVtbl->Release(*RenderTargetView);
 	(*RenderTargetView) = NULL;
 	
 	
-	ASSERT(SwapChain->ResizeBuffers(0,NewWidth,NewHeight,DXGI_FORMAT_UNKNOWN,0)==S_OK);
+	ASSERT(SwapChain->lpVtbl->ResizeBuffers(SwapChain,0,NewWidth,NewHeight,DXGI_FORMAT_UNKNOWN,0)==S_OK);
 	
 	
-	HRESULT res = SwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D),(void**)&GlobalFrameBuffer);
+	HRESULT res = SwapChain->lpVtbl->GetBuffer(SwapChain,0,&IID_ID3D11Texture2D,(void**)&GlobalFrameBuffer);
 	if(res == S_OK){
 		ASSERT(GlobalFrameBuffer);
 		//RenderTargetView
-		res = Device->CreateRenderTargetView(GlobalFrameBuffer,NULL,RenderTargetView);
+		res = Device->lpVtbl->CreateRenderTargetView(Device,(ID3D11Resource*)GlobalFrameBuffer,NULL,RenderTargetView);
 		if(res == S_OK){
 			ASSERT(RenderTargetView);
 			OutputDebugStringA("Resize Success\n");
@@ -646,7 +648,7 @@ internal void UpdateCSTexture(
 	ASSERT(RenderTargetView);
 	
 	if(*CSShaderResource){
-		(*CSShaderResource)->Release();
+		(*CSShaderResource)->lpVtbl->Release(*CSShaderResource);
 		*CSShaderResource = NULL;
 	}
 	
@@ -669,11 +671,11 @@ internal void UpdateCSTexture(
 	CSSubresourceData.SysMemPitch = 4;
 	CSSubresourceData.SysMemSlicePitch = 0;
 	D3D11_TEXTURE2D_DESC Tex2DDesc;
-	GlobalFrameBuffer->GetDesc(&Tex2DDesc);
+	GlobalFrameBuffer->lpVtbl->GetDesc(GlobalFrameBuffer,&Tex2DDesc);
 	Tex2DDesc.BindFlags |= (D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS);
 	
 	ASSERT((*CSShaderResource) == NULL);
-	ASSERT(Device->CreateTexture2D(&Tex2DDesc,&CSSubresourceData,CSShaderResource)==S_OK);
+	ASSERT(Device->lpVtbl->CreateTexture2D(Device,&Tex2DDesc,&CSSubresourceData,CSShaderResource)==S_OK);
 	ASSERT((*CSShaderResource) != NULL);
 	//Create new UAV
 	D3D11_BUFFER_UAV UAVElementDesc;
@@ -686,7 +688,7 @@ internal void UpdateCSTexture(
 	UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
 	UAVDesc.Buffer = UAVElementDesc;
 
-	ASSERT(Device->CreateUnorderedAccessView(*CSShaderResource,&UAVDesc,&(UAVArray[0]))==S_OK);
+	ASSERT(Device->lpVtbl->CreateUnorderedAccessView(Device,(ID3D11Resource*)*CSShaderResource,&UAVDesc,&(UAVArray[0]))==S_OK);
 	ASSERT(UAVArray[0]!=NULL);	
 	VirtualFree(CSShaderResourceData, 0, MEM_RELEASE);
 }
@@ -824,8 +826,8 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			#define VSPassTroughInputLayout VSInputLayoutArray[0]
 			ID3DBlob *VSBlob = Win32CompileShaderFromFile(L"VertexShaderPassThrough.hlsl","VSEntry","vs_5_0");
 			ASSERT(VSBlob);
-			void *VSBinaryCode = VSBlob->GetBufferPointer();
-			size_t VSBinarySize = VSBlob->GetBufferSize();
+			void *VSBinaryCode = VSBlob->lpVtbl->GetBufferPointer(VSBlob);
+			size_t VSBinarySize = VSBlob->lpVtbl->GetBufferSize(VSBlob);
 			
 			VSPassTrough = Win32CreateVertexShader(Device,VSBinaryCode,VSBinarySize);
 				ASSERT(VSPassTrough);
@@ -833,22 +835,22 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				Device,
 				VSBinaryCode,
 				VSBinarySize);
-			VSBlob->Release();
+			VSBlob->lpVtbl->Release(VSBlob);
 			VSBlob = NULL;
 			
 			#define VSCube VertexShaderArray[1]
 			#define VSCubeInputLayout VSInputLayoutArray[1]
 			VSBlob = Win32CompileShaderFromFile(L"VertexShaderCube.hlsl","VSEntry","vs_5_0");
 			ASSERT(VSBlob);
-			VSBinaryCode = VSBlob->GetBufferPointer();
-			VSBinarySize = VSBlob->GetBufferSize();
+			VSBinaryCode = VSBlob->lpVtbl->GetBufferPointer(VSBlob);
+			VSBinarySize = VSBlob->lpVtbl->GetBufferSize(VSBlob);
 			VSCube = Win32CreateVertexShader(Device,VSBinaryCode,VSBinarySize);
 				ASSERT(VSCube);
 				VSCubeInputLayout = Win32CreateVertexInputLayout(
 				Device,
 				VSBinaryCode,
 				VSBinarySize);
-			VSBlob->Release();
+			VSBlob->lpVtbl->Release(VSBlob);
 			VSBlob = NULL;
 			
 		
@@ -864,31 +866,31 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			//HUllShader
 			ID3DBlob *HSBlob = Win32CompileShaderFromFile(L"HullShaderCube.hlsl","HSEntry","hs_5_0");
 			ASSERT(HSBlob);
-			void *HSBinaryCode = HSBlob->GetBufferPointer();
-			size_t HSBinarySize = HSBlob->GetBufferSize();
-			res = Device->CreateHullShader(HSBinaryCode,HSBinarySize,NULL,&HullShaderArray[0]);
+			void *HSBinaryCode  = HSBlob->lpVtbl->GetBufferPointer(HSBlob);
+			size_t HSBinarySize = HSBlob->lpVtbl->GetBufferSize(HSBlob);
+			res = Device->lpVtbl->CreateHullShader(Device,HSBinaryCode,HSBinarySize,NULL,&HullShaderArray[0]);
 			ASSERT(res==S_OK);
-			HSBlob->Release();
+			HSBlob->lpVtbl->Release(HSBlob);
 			HSBlob = NULL;
 			
 			//DomainShader
 			ID3DBlob *DSBlob = Win32CompileShaderFromFile(L"DomainShaderCube.hlsl","DSEntry","ds_5_0");
 			ASSERT(DSBlob);
-			void *DSBinaryCode = DSBlob->GetBufferPointer();
-			size_t DSBinarySize = DSBlob->GetBufferSize();
-			res = Device->CreateDomainShader(DSBinaryCode,DSBinarySize,NULL,&DomainShaderArray[0]);
+			void *DSBinaryCode  = DSBlob->lpVtbl->GetBufferPointer(DSBlob);
+			size_t DSBinarySize = DSBlob->lpVtbl->GetBufferSize(DSBlob);
+			res = Device->lpVtbl->CreateDomainShader(Device,DSBinaryCode,DSBinarySize,NULL,&DomainShaderArray[0]);
 			ASSERT(res==S_OK);
-			DSBlob->Release();
+			DSBlob->lpVtbl->Release(DSBlob);
 			DSBlob = NULL;
 			
 			//GeometryShader
 			ID3DBlob *GSBlob = Win32CompileShaderFromFile(L"GeometryShaderCube.hlsl","GSEntry","gs_5_0");
 			ASSERT(GSBlob);
-			void *GSBinaryCode = GSBlob->GetBufferPointer();
-			size_t GSBinarySize = GSBlob->GetBufferSize();
-			res = Device->CreateGeometryShader(GSBinaryCode,GSBinarySize,NULL,&GeometryShaderArray[0]);
+			void *GSBinaryCode  = GSBlob->lpVtbl->GetBufferPointer(GSBlob);
+			size_t GSBinarySize = GSBlob->lpVtbl->GetBufferSize(GSBlob);
+			res = Device->lpVtbl->CreateGeometryShader(Device,GSBinaryCode,GSBinarySize,NULL,&GeometryShaderArray[0]);
 			ASSERT(res==S_OK);
-			GSBlob->Release();
+			GSBlob->lpVtbl->Release(GSBlob);
 			GSBlob = NULL;
 			
 			
@@ -906,7 +908,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			RasterizerDesc1.AntialiasedLineEnable = FALSE;
 			
 			ID3D11RasterizerState *RasterizerState1 = NULL;
-			res = Device->CreateRasterizerState(&RasterizerDesc1,&RasterizerState1);
+			res = Device->lpVtbl->CreateRasterizerState(Device,&RasterizerDesc1,&RasterizerState1);
 			ASSERT(RasterizerState1);
 
 			D3D11_RASTERIZER_DESC RasterizerDesc2;
@@ -922,15 +924,17 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			RasterizerDesc2.AntialiasedLineEnable = FALSE;
 			
 			ID3D11RasterizerState *RasterizerState2 = NULL;
-			res = Device->CreateRasterizerState(&RasterizerDesc2,&RasterizerState2);
+			res = Device->lpVtbl->CreateRasterizerState(Device,&RasterizerDesc2,&RasterizerState2);
 			ASSERT(RasterizerState2);
 			
 			ID3D11RenderTargetView 	*RenderTargetView = NULL;
 			//FrameBuffer
-			if(SwapChain->GetBuffer(0,__uuidof(ID3D11Resource),(void**)&GlobalFrameBuffer)==S_OK){
+			res = SwapChain->lpVtbl->GetBuffer(SwapChain,0,&IID_ID3D11Resource,(void**)&GlobalFrameBuffer);
+			if(res == S_OK){
 				ASSERT(GlobalFrameBuffer);
 				//RenderTargetView
-				if(Device->CreateRenderTargetView(GlobalFrameBuffer,NULL,&RenderTargetView)==S_OK){
+				res = Device->lpVtbl->CreateRenderTargetView(Device,(ID3D11Resource*)GlobalFrameBuffer,NULL,&RenderTargetView);
+				if(res == S_OK){
 					ASSERT(RenderTargetView);
 					OutputDebugStringA("RTV Success\n");
 				}
@@ -961,7 +965,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			ConstantBufferSubresourceData.SysMemPitch = 0;
 			ConstantBufferSubresourceData.SysMemSlicePitch = 0;
 			ID3D11Buffer *ConstantBuffer = NULL;
-			Device->CreateBuffer(&AngleConstantBufferDesc,&ConstantBufferSubresourceData,&ConstantBuffer);
+			Device->lpVtbl->CreateBuffer(Device,&AngleConstantBufferDesc,&ConstantBufferSubresourceData,&ConstantBuffer);
 			ASSERT(ConstantBuffer);
 			
 			
@@ -1112,11 +1116,11 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			ID3DBlob *CSBlob= Win32CompileShaderFromFile(L"ComputeShaderCube.hlsl","CSEntry","cs_5_0");
 			ASSERT(CSBlob);
-			void *CSBinaryCode = CSBlob->GetBufferPointer();
-			size_t CSBinarySize = CSBlob->GetBufferSize();
-			res = Device->CreateComputeShader(CSBinaryCode,CSBinarySize,NULL,&ComputeShaderArray[0]);
+			void *CSBinaryCode  = CSBlob->lpVtbl->GetBufferPointer(CSBlob);
+			size_t CSBinarySize = CSBlob->lpVtbl->GetBufferSize(CSBlob);
+			res = Device->lpVtbl->CreateComputeShader(Device,CSBinaryCode,CSBinarySize,NULL,&ComputeShaderArray[0]);
 			ASSERT(res==S_OK);
-			CSBlob->Release();
+			CSBlob->lpVtbl->Release(CSBlob);
 			CSBlob = NULL;
 			
 			UpdateCSTexture(Device,Width, Height, &CSShaderResource, UAVArray, &RenderTargetView);
@@ -1180,31 +1184,31 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				ViewPort.MaxDepth = 1.0f;
 
 				float const BackgroundClearColorRGBA[4] = {1,1,1,1};
-				Context->ClearRenderTargetView(RenderTargetView, BackgroundClearColorRGBA);
+				Context->lpVtbl->ClearRenderTargetView(Context,RenderTargetView, BackgroundClearColorRGBA);
 				
 				ConstantBufferData[1]=(float)Width;
 				ConstantBufferData[2]=(float)Height;
 				
 				D3D11_MAPPED_SUBRESOURCE AngleSubresource = {0};
-					Context->Map(ConstantBuffer,0,D3D11_MAP_WRITE_DISCARD,NULL,&AngleSubresource);
+					Context->lpVtbl->Map(Context,(ID3D11Resource*)ConstantBuffer,0,D3D11_MAP_WRITE_DISCARD,0,&AngleSubresource);
 					memcpy(AngleSubresource.pData,ConstantBufferData,sizeof(ConstantBufferData));
 					
-					Context->Unmap(ConstantBuffer,0);
+					Context->lpVtbl->Unmap(Context,(ID3D11Resource*)ConstantBuffer,0);
 				
 				
 				for(unsigned int i = 0; i< ActivePipelineStateCount;i++){
 					UINT DrawIndexCount = SetPipelineState(Context,&ActivePipelineStateArray[i],&ViewPort,1,NULL,0);
 					ASSERT(DrawIndexCount);
-					Context->DrawIndexed(DrawIndexCount,0,0);
+					Context->lpVtbl->DrawIndexed(Context,DrawIndexCount,0,0);
 				}
 				if(ActiveCSState->ComputeShader){
-					Context->CopyResource(CSShaderResource, GlobalFrameBuffer);
+					Context->lpVtbl->CopyResource(Context,(ID3D11Resource*)CSShaderResource, (ID3D11Resource*)GlobalFrameBuffer);
 					SetComputeShaderState(Context,ActiveCSState);
-					Context->Dispatch(Width,Height,1);
-					Context->CopyResource(GlobalFrameBuffer,CSShaderResource);
+					Context->lpVtbl->Dispatch(Context,Width,Height,1);
+					Context->lpVtbl->CopyResource(Context,(ID3D11Resource*)GlobalFrameBuffer,(ID3D11Resource*)CSShaderResource);
 				}
 				
-				SwapChain->Present(VsyncActive, 0);
+				SwapChain->lpVtbl->Present(SwapChain,VsyncActive, 0);
 				
 				if (AnimationIsActive) {
 					AnimationCount = (AnimationCount + 1) % (60);
@@ -1248,7 +1252,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			#define ReleaseCOMArray(x)\
 			for(int i = 0; i < ArrayCount(x); i++){\
 				if((x)[i]){\
-					(x)[i]->Release();\
+					(x)[i]->lpVtbl->Release((x)[i]);\
 					(x)[i]=NULL;\
 				}\
 			}
@@ -1265,36 +1269,36 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			ReleaseCOMArray(UAVArray);
 			
 			if(RasterizerState1){
-				RasterizerState1->Release();
+				RasterizerState1->lpVtbl->Release(RasterizerState1);
 				RasterizerState1 = NULL;
 			}
 			if(RasterizerState2){
-				RasterizerState2->Release();
+				RasterizerState2->lpVtbl->Release(RasterizerState2);
 				RasterizerState2 = NULL;
 			}
 			if(ConstantBuffer){
-				ConstantBuffer->Release();
+				ConstantBuffer->lpVtbl->Release(ConstantBuffer);
 				ConstantBuffer = NULL;
 			}
 			
 			if(IdxgiDevice){
-				IdxgiDevice->Release();
+				IdxgiDevice->lpVtbl->Release(IdxgiDevice);
 				IdxgiDevice = NULL;
 			}
 			if(IdxgiAdapter){
-				IdxgiAdapter->Release();
+				IdxgiAdapter->lpVtbl->Release(IdxgiAdapter);
 				IdxgiAdapter = NULL;
 			}
 			if(IdxgiFactory){
-				IdxgiFactory->Release();
+				IdxgiFactory->lpVtbl->Release(IdxgiFactory);
 				IdxgiFactory = NULL;
 			}
 			if(RenderTargetView){
-				RenderTargetView->Release();
+				RenderTargetView->lpVtbl->Release(RenderTargetView);
 				RenderTargetView = NULL;
 			}
 			if(CSShaderResource){
-				CSShaderResource->Release();
+				CSShaderResource->lpVtbl->Release(CSShaderResource);
 				CSShaderResource = NULL;
 			}
 
@@ -1305,19 +1309,19 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			Win32ProcessError(GetLastError());
 		}
 		if(Device){
-			Device->Release();
+			Device->lpVtbl->Release(Device);
 			Device = NULL;
 		}
 		if(SwapChain){
-			SwapChain->Release();
+			SwapChain->lpVtbl->Release(SwapChain);
 			Device = NULL;
 		}
 		if(Context){
-			Context->Release();
+			Context->lpVtbl->Release(Context);
 			Device = NULL;
 		}
 		if(GlobalFrameBuffer){
-			GlobalFrameBuffer->Release();
+			GlobalFrameBuffer->lpVtbl->Release(GlobalFrameBuffer);
 			GlobalFrameBuffer = NULL;
 		}
 		DestroyWindow(Window);
