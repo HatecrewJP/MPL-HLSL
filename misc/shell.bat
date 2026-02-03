@@ -3,4 +3,3 @@ call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build
 if not exist v:\ call subst v: D:\GitRepos\Direct3D
 set path=V:\misc;%path%
 V:
-cd code

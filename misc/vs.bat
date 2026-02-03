@@ -1,2 +1,2 @@
 @echo off
-devenv V:\build\Direct3D.exe
+devenv V:\CPP\build\Direct3D.exe
