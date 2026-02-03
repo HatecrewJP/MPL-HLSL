@@ -87,7 +87,7 @@ internal GraphicsPipelineState BuildPipelineState(
 	UINT PixelShaderConstantBufferCount,
 	ID3D11RenderTargetView* *RenderTargetViewArray,
 	UINT RenderTargetViewCount,
-	char *Description
+	char const *Description
 	);
 
 internal void AddPipelineStateToArray(
@@ -95,7 +95,7 @@ internal void AddPipelineStateToArray(
 	unsigned int *PipelineStateCount, 
 	GraphicsPipelineState PipelineState);
 	
-internal void SetComputeShaderState(ID3D11DeviceContext *DeviceContext, ComputeShaderState &CSState);
+internal void SetComputeShaderState(ID3D11DeviceContext *DeviceContext, ComputeShaderState *CSState);
 internal void ClearActivePipelineState(GraphicsPipelineState*ActivePipelineStateArray,unsigned int *ActivePipelineStateCount);
 internal void PushPipelineState(GraphicsPipelineState*ActivePipelineStateArray,unsigned int *ActivePipelineStateCount, GraphicsPipelineState *State);
 

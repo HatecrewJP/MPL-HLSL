@@ -1,9 +1,11 @@
 #pragma once
 
+
 struct ShaderCode{
 	void *Code;
 	size_t Size;
 };
+typedef struct ShaderCode ShaderCode;
 struct GraphicsPipelineState{
 	//IA
 	ID3D11Buffer* *VertexBufferArray;
@@ -34,8 +36,9 @@ struct GraphicsPipelineState{
 	//OMS
 	ID3D11RenderTargetView* *RenderTargetViewArray;
 	UINT RenderTargetViewCount;
-	char *Description;
+	char const *Description;
 };
+typedef struct GraphicsPipelineState GraphicsPipelineState;
 
 struct ComputeShaderState{
 	ID3D11ShaderResourceView* *ShaderResourceViewArray;
@@ -46,7 +49,7 @@ struct ComputeShaderState{
 
 	ID3D11ComputeShader *ComputeShader;
 };
-
+typedef struct ComputeShaderState ComputeShaderState;
 
 struct IndexedGeometryObject{
 	void *VertexData;
@@ -59,21 +62,8 @@ struct IndexedGeometryObject{
 	UINT IndexCount;
 	UINT IndexDataSize;
 };
+typedef struct IndexedGeometryObject IndexedGeometryObject;
 
-
-struct float3{
-	float x;
-	float y;
-	float z;
-};
-
-
-struct CameraObject{
-	float3 BottomLeft;
-	float3 TopRight;
-	float FOV;
-	float ViewDistance;
-};
 
 enum ShaderColor{
 	RED,
@@ -83,6 +73,7 @@ enum ShaderColor{
 	
 	SHADER_COLOR_COUNT
 };
+typedef enum ShaderColor ShaderColor;
 
 struct MessageLoopStateInput{
 	bool *Running;
@@ -96,4 +87,5 @@ struct MessageLoopStateInput{
 	ComputeShaderState* *ActiveCSState;
 	ComputeShaderState *ComputeShaderStateArray;
 };
+typedef struct MessageLoopStateInput MessageLoopStateInput;
 

@@ -16,13 +16,18 @@
 
 #define internal static
 #define global_variable static
+#ifndef __cplusplus
+	typedef int bool;
+	#define true 1
+	#define false 0
+#endif
 
 #include "Structs.h"
 #include "Win32Platform.h"
 
 global_variable int const Zero = 0;
-global_variable GraphicsPipelineState NILGraphicsPipelineState = {};
-global_variable ComputeShaderState NILComputeShaderState = {};
+global_variable GraphicsPipelineState NILGraphicsPipelineState = {0};
+global_variable ComputeShaderState NILComputeShaderState = {0};
 
 
 global_variable ID3D11Texture2D	*GlobalFrameBuffer = NULL;
@@ -494,10 +499,9 @@ internal GraphicsPipelineState BuildPipelineState(
 	UINT PixelShaderConstantBufferCount,
 	ID3D11RenderTargetView* *RenderTargetViewArray,
 	UINT RenderTargetViewCount,
-	char *Description = "Unknown"
-	)
+	char const *Description)
 {
-	GraphicsPipelineState NewPipelineState = {};
+	GraphicsPipelineState NewPipelineState = {0};
 	NewPipelineState.VertexBufferArray = VertexBufferArray;
 	NewPipelineState.VertexBufferCount = VertexBufferCount;
 	NewPipelineState.StrideArray = StrideArray;
@@ -608,10 +612,14 @@ internal void ResizeSwapChainBuffers(
 	
 	
 	ASSERT(SwapChain->ResizeBuffers(0,NewWidth,NewHeight,DXGI_FORMAT_UNKNOWN,0)==S_OK);
-	if(SwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D),(void**)&GlobalFrameBuffer)==S_OK){
+	
+	
+	HRESULT res = SwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D),(void**)&GlobalFrameBuffer);
+	if(res == S_OK){
 		ASSERT(GlobalFrameBuffer);
 		//RenderTargetView
-		if(Device->CreateRenderTargetView(GlobalFrameBuffer,NULL,RenderTargetView)==S_OK){
+		res = Device->CreateRenderTargetView(GlobalFrameBuffer,NULL,RenderTargetView);
+		if(res == S_OK){
 			ASSERT(RenderTargetView);
 			OutputDebugStringA("Resize Success\n");
 		}
@@ -685,7 +693,7 @@ internal void UpdateCSTexture(
 
 internal void CycleShaderColors(ShaderColor *CurrentShaderColor){
 	ASSERT(CurrentShaderColor);
-	*CurrentShaderColor = ShaderColor((*CurrentShaderColor + 1) % SHADER_COLOR_COUNT);
+	*CurrentShaderColor = (ShaderColor)((*CurrentShaderColor + 1) % SHADER_COLOR_COUNT);
 }
 
 
@@ -743,9 +751,9 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			OutputDebugStringA("Device Created\n");
 			
 			UINT VertexBufferArrayCount = 0;
-			ID3D11Buffer* 			VertexBufferArray[32] = {};
-			ID3D11Buffer* 			IndexBufferArray[64] 	= {};
-			ID3D11InputLayout*		VSInputLayoutArray[64] = {};
+			ID3D11Buffer* 			VertexBufferArray[32] = {0};
+			ID3D11Buffer* 			IndexBufferArray[64] 	= {0};
+			ID3D11InputLayout*		VSInputLayoutArray[64] = {0};
 			ID3D11VertexShader* 	VertexShaderArray[64];
 			ID3D11HullShader* 		HullShaderArray[64];
 			ID3D11DomainShader* 	DomainShaderArray[64];
@@ -771,7 +779,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 			
 			
 			
-			float CubeVertices[]{
+			float CubeVertices[7*8]={
 				/*Pos*/ -0.50f,-0.50f, 0.00f, /*COLOR*/ 0.00f, 0.00f, 0.00f, 1.00f,
 				/*Pos*/  0.50f,-0.50f, 0.00f, /*COLOR*/ 0.00f, 0.00f, 1.00f, 1.00f,
 				/*Pos*/ -0.50f, 0.50f, 0.00f, /*COLOR*/ 0.00f, 1.00f, 0.00f, 1.00f,
@@ -781,7 +789,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				/*Pos*/ -0.50f, 0.50f, 1.00f, /*COLOR*/ 1.00f, 1.00f, 0.00f, 1.00f,
 				/*Pos*/  0.50f, 0.50f, 1.00f, /*COLOR*/ 1.00f, 1.00f, 1.00f, 1.00f,
 			};
-			UINT CubeIndices[]{
+			UINT CubeIndices[12*3]={
 				//Front Face
 				0,2,3,  0,3,1,
 				//Back Face
@@ -934,7 +942,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				OutputDebugStringA("SwapChain no Buffer\n");
 			}
 			
-			float ConstantBufferData[64] = {};
+			float ConstantBufferData[64] = {0};
 			ConstantBufferData[4] = 1.0f;
 			ConstantBufferData[5] = 1.0f;
 			ConstantBufferData[8] = 0.0f;
@@ -1177,7 +1185,7 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 				ConstantBufferData[1]=(float)Width;
 				ConstantBufferData[2]=(float)Height;
 				
-				D3D11_MAPPED_SUBRESOURCE AngleSubresource = {};
+				D3D11_MAPPED_SUBRESOURCE AngleSubresource = {0};
 					Context->Map(ConstantBuffer,0,D3D11_MAP_WRITE_DISCARD,NULL,&AngleSubresource);
 					memcpy(AngleSubresource.pData,ConstantBufferData,sizeof(ConstantBufferData));
 					
