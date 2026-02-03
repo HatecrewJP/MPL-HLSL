@@ -11,6 +11,6 @@ pushd V:\
 if not exist build mkdir build
 pushd %BD%
 cd
-cl %CompilerParams% -Tc %SD%Win32Platform.cpp %LinkParams% /Fe"Direct3D.exe"
+cl %CompilerParams% -Tc %SD%Win32Platform.c %LinkParams% /Fe"Direct3D.exe"
 popd
 popd
