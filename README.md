@@ -5,7 +5,7 @@ I'm making this application to understand the graphics pipeline and the differen
 
 This project requires microsoft build tools, which are shipped with Visual Studio 2022.
 
-The build script needs to be run from a visual studio developer command prompt, which sets the necessary environment variables.
+The build scripts need to be run inside the misc directory from a visual studio developer command prompt, which sets the necessary environment variables.
 
 Running the C version:
 
